@@ -124,7 +124,7 @@ $ ./configure --add-module=/path/to/ngx_http_proxy_connect_module
 $ make && make install
 ```
 
-Note that `proxy_connect.patch` includes logic in macro NGX_HTTP_RPOXY_CONNECT, and [config](https://github.com/chobis/ngx_http_proxy_connect_module/blob/master/config) script will enable this macro automatically.
+Note that `proxy_connect.patch` includes logic in macro NGX_HTTP_RPOXY_CONNECT, and [config](https://github.com/chobits/ngx_http_proxy_connect_module/blob/master/config#L5) script will enable this macro automatically.
 
 Author
 ======
