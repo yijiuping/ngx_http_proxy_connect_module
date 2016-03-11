@@ -57,11 +57,12 @@ proxy_connect_allow
 -------------------
 
 Syntax: **proxy_connect_allow `[port ...]`**  
-Default: `none`  
+Default: `443 563`  
 Context: `server`  
 
 This directive specifies a list of port numbers or ranges to which the proxy CONNECT method may connect.  
-All the ports are disabled by default.
+By default, only the default https port (443) and the default snews port (563) are enabled.  
+Using this directive will override this default and allow connections to the listed ports only.
 
 proxy_connect_connect_timeout
 -----------------------------
