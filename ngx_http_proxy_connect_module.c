@@ -23,6 +23,7 @@ typedef void (*ngx_http_proxy_connect_upstream_handler_pt)(
 
 typedef struct {
     ngx_flag_t                       accept_connect;
+    ngx_flag_t                       allow_port_all;
     ngx_array_t                     *allow_ports;
 
     ngx_msec_t                       read_timeout;
@@ -1159,7 +1160,7 @@ ngx_http_proxy_connect_wr_check_broken_connection(ngx_http_request_t *r)
 static ngx_int_t
 ngx_http_proxy_connect_handler(ngx_http_request_t *r)
 {
-    in_port_t                           *p;
+    in_port_t                          (*ports)[2];
     ngx_url_t                            url;
     ngx_uint_t                           i, allow;
     ngx_resolver_ctx_t                  *rctx, temp;
@@ -1172,11 +1173,21 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
 
     allow = 0;
 
-    if (plcf->allow_ports) {
-        p = plcf->allow_ports->elts;
+    if (plcf->allow_port_all) {
+        allow = 1;
+
+    } else if (plcf->allow_ports) {
+        ports = plcf->allow_ports->elts;
 
         for (i = 0; i < plcf->allow_ports->nelts; i++) {
-            if (r->connect_port_n == p[i]) {
+            /*
+             * connect_port == port
+             * OR
+             * port <= connect_port <= eport
+             */
+            if ((ports[i][1] == 0 && r->connect_port_n == ports[i][0])
+                || (ports[i][0] <= r->connect_port_n && r->connect_port_n <= ports[i][1]))
+            {
                 allow = 1;
                 break;
             }
@@ -1303,8 +1314,9 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
 static char *
 ngx_http_proxy_connect_allow(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    in_port_t                           *p;
-    ngx_int_t                            port;
+    u_char                              *p;
+    in_port_t                           *ports;
+    ngx_int_t                            port, eport;
     ngx_uint_t                           i;
     ngx_str_t                           *value;
     ngx_http_proxy_connect_loc_conf_t   *plcf = conf;
@@ -1313,7 +1325,7 @@ ngx_http_proxy_connect_allow(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return "is duplicate";
     }
 
-    plcf->allow_ports = ngx_array_create(cf->pool, 2, sizeof(in_port_t));
+    plcf->allow_ports = ngx_array_create(cf->pool, 2, sizeof(in_port_t[2]));
     if (plcf->allow_ports == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -1321,21 +1333,50 @@ ngx_http_proxy_connect_allow(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     value = cf->args->elts;
 
     for (i = 1; i < cf->args->nelts; i++) {
-        port = ngx_atoi(value[i].data, value[i].len);
 
-        if (port == NGX_ERROR || port < 1 || port > 65535) {
-            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                               "invalid value \"%V\" in \"%V\" directive",
-                               &cf->args[i], &cmd->name);
-            return  NGX_CONF_ERROR;
+        if (value[i].len == 3 && ngx_strncmp(value[i].data, "all", 3) == 0) {
+            plcf->allow_port_all = 1;
+            continue;
         }
 
-        p = ngx_array_push(plcf->allow_ports);
-        if (p == NULL) {
+        p = ngx_strlchr(value[i].data, value[i].data + value[i].len, '-');
+
+        if (p != NULL) {
+            port = ngx_atoi(value[i].data, p - value[i].data);
+            p++;
+            eport = ngx_atoi(p, value[i].data + value[i].len - p);
+
+            if (port == NGX_ERROR || port < 1 || port > 65535
+                || eport == NGX_ERROR || eport < 1 || eport > 65535
+                || port > eport)
+            {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "invalid port range \"%V\" in \"%V\" directive",
+                                   &value[i], &cmd->name);
+                return  NGX_CONF_ERROR;
+            }
+
+        } else {
+
+            port = ngx_atoi(value[i].data, value[i].len);
+
+            if (port == NGX_ERROR || port < 1 || port > 65535) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "invalid value \"%V\" in \"%V\" directive",
+                                   &value[i], &cmd->name);
+                return  NGX_CONF_ERROR;
+            }
+
+            eport = 0;
+        }
+
+        ports = ngx_array_push(plcf->allow_ports);
+        if (ports == NULL) {
             return NGX_CONF_ERROR;
         }
 
-        *p = port;
+        ports[0] = port;
+        ports[1] = eport;
     }
 
     return NGX_CONF_OK;
@@ -1366,6 +1407,7 @@ ngx_http_proxy_connect_create_loc_conf(ngx_conf_t *cf)
     }
 
     conf->accept_connect = NGX_CONF_UNSET;
+    conf->allow_port_all = NGX_CONF_UNSET;
     conf->allow_ports = NGX_CONF_UNSET_PTR;
 
     conf->connect_timeout = NGX_CONF_UNSET_MSEC;
@@ -1386,6 +1428,7 @@ ngx_http_proxy_connect_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_http_proxy_connect_loc_conf_t    *conf = child;
 
     ngx_conf_merge_value(conf->accept_connect, prev->accept_connect, 0);
+    ngx_conf_merge_value(conf->allow_port_all, prev->allow_port_all, 0);
     ngx_conf_merge_ptr_value(conf->allow_ports, prev->allow_ports, NULL);
 
     ngx_conf_merge_msec_value(conf->connect_timeout,
