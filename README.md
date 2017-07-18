@@ -56,13 +56,23 @@ Enable "CONNECT" HTTP method support.
 proxy_connect_allow
 -------------------
 
-Syntax: **proxy_connect_allow `[port ...]`**  
+Syntax: **proxy_connect_allow `all | [port ...] | [port-range ...]`**  
 Default: `443 563`  
 Context: `server`  
 
 This directive specifies a list of port numbers or ranges to which the proxy CONNECT method may connect.  
 By default, only the default https port (443) and the default snews port (563) are enabled.  
 Using this directive will override this default and allow connections to the listed ports only.
+
+The value `all` will allow all ports to proxy.
+
+The value `port` will allow specified port to proxy.
+
+The value `port-range` will allow specified range of port to proxy, for example:
+
+```
+proxy_connect_allow 1000-2000 3000-4000; # allow range of port from 1000 to 2000, from 3000 to 4000.
+```
 
 proxy_connect_connect_timeout
 -----------------------------
