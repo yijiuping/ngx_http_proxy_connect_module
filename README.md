@@ -34,9 +34,38 @@ A simple test with command `curl` is as following:
 
 ```
 $ curl https://github.com/ -v -x 127.0.0.1:3128
-
+*   Trying 127.0.0.1...
+* Connected to 127.0.0.1 (127.0.0.1) port 3128 (#0)
+* Establish HTTP proxy tunnel to github.com:443
+> CONNECT github.com:443 HTTP/1.1
+> Host: github.com:443
+> User-Agent: curl/7.43.0
+> Proxy-Connection: Keep-Alive
+>
+< HTTP/1.0 200 Connection Established
+< Proxy-agent: nginx
+<
+* Proxy replied OK to CONNECT request
+* TLS 1.2 connection using TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+* Server certificate: github.com
+* Server certificate: DigiCert SHA2 Extended Validation Server CA
+* Server certificate: DigiCert High Assurance EV Root CA
+> GET / HTTP/1.1
+> Host: github.com
+> User-Agent: curl/7.43.0
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< Date: Fri, 11 Aug 2017 04:13:57 GMT
+< Content-Type: text/html; charset=utf-8
+< Transfer-Encoding: chunked
+< Server: GitHub.com
+< Status: 200 OK
+< Cache-Control: no-cache
+< Vary: X-PJAX
 ...
-
+... <other response headers & response body> ...
+...
 ```
 
 Also you can configure your browser to use this nginx as PROXY server.
