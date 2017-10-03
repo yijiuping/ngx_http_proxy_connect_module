@@ -668,6 +668,7 @@ ngx_http_proxy_connect_write_upstream(ngx_http_request_t *r,
 
     if (!ctx->send_established) {
         ngx_http_proxy_connect_send_connection_established(r);
+        return;
     }
 
     if (!ctx->send_established_done) {
