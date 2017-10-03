@@ -140,7 +140,7 @@ Nginx Compatibility
 
 The latest module is compatible with the following versions of nginx:
 
-* 1.9.2 (stable version of 1.9.x)
+* 1.10.3 (stable version of 1.10.x)
 * 1.8.1 (stable version of 1.8.x)
 * 1.6.3 (stable version of 1.6.x)
 * 1.4.7 (stable version of 1.4.x)
