@@ -378,8 +378,9 @@ ngx_http_proxy_connect_tunnel(ngx_http_request_t *r,
     c = r->connection;
     u = ctx->u;
 
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                   "http proxy_connect, fu:%ui", from_upstream);
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "http proxy_connect, fu:%ui write:%ui",
+                   from_upstream, do_write);
 
     downstream = c;
     upstream = u->peer.connection;
