@@ -21,7 +21,7 @@ use Test::Nginx;
 select STDERR; $| = 1;
 select STDOUT; $| = 1;
 
-my $t = Test::Nginx->new()->has(qw/http proxy/)->plan(7);
+my $t = Test::Nginx->new()->has(qw/http proxy/)->plan(9);
 
 $t->write_file_expand('nginx.conf', <<'EOF');
 
@@ -35,11 +35,17 @@ events {
 http {
     %%TEST_GLOBALS_HTTP%%
 
+    log_format connect '$remote_addr - $remote_user [$time_local] "$request" '
+                       '$status $body_bytes_sent var:$connect_host-$connect_port-$connect_addr';
+
+    access_log %%TESTDIR%%/connect.log connect;
+
     resolver 8.8.8.8;
 
     server {
         listen  8081;
         server_name server_8081;
+        access_log off;
         location / {
             return 200 "hello\n";
         }
@@ -64,6 +70,12 @@ http {
         location = /hello {
             return 200 "world";
         }
+
+        # used to output connect.log
+        location = /connect.log {
+            access_log off;
+            root %%TESTDIR%%/;
+        }
     }
 }
 
@@ -80,6 +92,12 @@ like(http_connect_request('www.taobao111114.com', '80', '/'), qr/502/, '200 Conn
 like(http_connect_request('127.0.0.1', '9999', '/'), qr/403/, '200 Connection Established not allowed port');
 like(http_get('/'), qr/hello/, 'Get method: proxy_pass');
 like(http_get('/hello'), qr/world/, 'Get method: return 200');
+
+
+# test $connect_host, $connect_port
+my $log = http_get('/connect.log');
+like($log, qr/CONNECT 127\.0\.0\.1:8081.*var:127\.0\.0\.1-8081-127\.0\.0\.1:8081/, '$connect_host, $connect_port, $connect_addr');
+like($log, qr/CONNECT www\.taobao111114\.com:80.*var:www\.taobao111114\.com-80--/, 'empty variable $connect_addr');
 
 $t->stop();
 
