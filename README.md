@@ -135,6 +135,26 @@ Sets a timeout for transmitting a request to the proxied server.
 The timeout is set only between two successive write operations, not for the transmission of the whole request.  
 If the proxied server does not receive anything within this time, the connection is closed.
 
+Variables
+=========
+
+$connect_host
+-------------
+
+host name from CONNECT request line.
+
+$connect_port
+-------------
+
+port from CONNECT request line.
+
+$connect_addr
+-------------
+
+IP address and port of the remote host, e.g. "192.168.1.5:12345".
+IP address is resolved from host name of CONNECT request line.
+
+
 Nginx Compatibility
 ===================
 
