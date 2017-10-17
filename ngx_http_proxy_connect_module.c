@@ -168,7 +168,7 @@ static ngx_http_variable_t  ngx_http_proxy_connect_vars[] = {
       ngx_http_proxy_connect_connect_addr_variable,
       0, NGX_HTTP_VAR_NOCACHEABLE, 0 },
 
-      ngx_http_null_variable
+    { ngx_null_string, NULL, NULL, 0, 0, 0 }
 };
 
 
