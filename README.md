@@ -9,6 +9,7 @@ Table of Contents
 
    * [name](#name)
    * [Example](#example)
+   * [Install](#install)
    * [Directive](#directive)
       * [proxy_connect](#proxy_connect)
       * [proxy_connect_allow](#proxy_connect_allow)
@@ -21,7 +22,6 @@ Table of Contents
       * [$connect_addr](#connect_addr)
    * [Nginx Compatibility](#nginx-compatibility)
    * [Tengine Compatibility](#tengine-compatibility)
-   * [Install](#install)
    * [Author](#author)
 
 Example
