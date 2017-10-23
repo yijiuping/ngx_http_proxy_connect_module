@@ -23,6 +23,7 @@ Table of Contents
    * [Nginx Compatibility](#nginx-compatibility)
    * [Tengine Compatibility](#tengine-compatibility)
    * [Author](#author)
+   * [License](#license)
 
 Example
 =======
@@ -211,3 +212,8 @@ Author
 ======
 * [Peng Qi](https://github.com/jinglong): original author. He contributed this module to [Tengine](https://github.com/tengine) in this [pull request](https://github.com/alibaba/tengine/pull/335/).  
 * [Xiaochen Wang](https://github.com/chobits): current maintainer. Rebuild this module for nginx.
+
+LICENSE
+=======
+
+See [LICENSE](https://github.com/chobits/ngx_http_proxy_connect_module/blob/master/LICENSE) for details.
