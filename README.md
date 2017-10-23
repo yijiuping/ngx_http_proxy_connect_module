@@ -1,7 +1,13 @@
+name
+====
+
+This module provides support for the "CONNECT" HTTP method.  
+This method is mainly used to [tunnel SSL requests](https://en.wikipedia.org/wiki/HTTP_tunnel#HTTP_CONNECT_tunneling) through proxy servers.
+
 Table of Contents
 =================
 
-   * [ngx_http_proxy_connect_module](#ngx_http_proxy_connect_module)
+   * [name](#name)
    * [Example](#example)
    * [Directive](#directive)
       * [proxy_connect](#proxy_connect)
@@ -17,14 +23,6 @@ Table of Contents
    * [Tengine Compatibility](#tengine-compatibility)
    * [Install](#install)
    * [Author](#author)
-
-Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
-
-ngx_http_proxy_connect_module
-=============================
-
-This module provides support for the "CONNECT" HTTP method.  
-This method is mainly used to [tunnel SSL requests](https://en.wikipedia.org/wiki/HTTP_tunnel#HTTP_CONNECT_tunneling) through proxy servers.
 
 Example
 =======
