@@ -209,7 +209,5 @@ Note that `proxy_connect.patch` includes logic in macro NGX_HTTP_RPOXY_CONNECT, 
 
 Author
 ======
-This module was developed by [Peng Qi](https://github.com/jinglong) originally.  
-He contributed this module to [Tengine](https://github.com/tengine) in this [pull request](https://github.com/alibaba/tengine/pull/335/).  
-
-I build this module for Nginx proper based on his pull request.
+* [Peng Qi](https://github.com/jinglong): original author. He contributed this module to [Tengine](https://github.com/tengine) in this [pull request](https://github.com/alibaba/tengine/pull/335/).  
+* [Xiaochen Wang](https://github.com/chobits): current maintainer. Rebuild this module for nginx.
