@@ -1,3 +1,25 @@
+Table of Contents
+=================
+
+   * [ngx_http_proxy_connect_module](#ngx_http_proxy_connect_module)
+   * [Example](#example)
+   * [Directive](#directive)
+      * [proxy_connect](#proxy_connect)
+      * [proxy_connect_allow](#proxy_connect_allow)
+      * [proxy_connect_connect_timeout](#proxy_connect_connect_timeout)
+      * [proxy_connect_read_timeout](#proxy_connect_read_timeout)
+      * [proxy_connect_write_timeout](#proxy_connect_write_timeout)
+   * [Variables](#variables)
+      * [$connect_host](#connect_host)
+      * [$connect_port](#connect_port)
+      * [$connect_addr](#connect_addr)
+   * [Nginx Compatibility](#nginx-compatibility)
+   * [Tengine Compatibility](#tengine-compatibility)
+   * [Install](#install)
+   * [Author](#author)
+
+Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
+
 ngx_http_proxy_connect_module
 =============================
 
