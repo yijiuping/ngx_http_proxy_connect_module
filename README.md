@@ -147,9 +147,9 @@ If the proxied server does not transmit anything within this time, the connectio
 proxy_connect_write_timeout
 ---------------------------
 
-Syntax: **proxy_connect_write_timeout `time`**
-Default: `60s`
-Context: `server`
+Syntax: **proxy_connect_write_timeout `time`**  
+Default: `60s`  
+Context: `server`  
 
 Sets a timeout for transmitting a request to the proxied server.  
 The timeout is set only between two successive write operations, not for the transmission of the whole request.  
