@@ -1,8 +1,28 @@
-ngx_http_proxy_connect_module
-=============================
+name
+====
 
 This module provides support for the "CONNECT" HTTP method.  
 This method is mainly used to [tunnel SSL requests](https://en.wikipedia.org/wiki/HTTP_tunnel#HTTP_CONNECT_tunneling) through proxy servers.
+
+Table of Contents
+=================
+
+   * [name](#name)
+   * [Example](#example)
+   * [Install](#install)
+   * [Directive](#directive)
+      * [proxy_connect](#proxy_connect)
+      * [proxy_connect_allow](#proxy_connect_allow)
+      * [proxy_connect_connect_timeout](#proxy_connect_connect_timeout)
+      * [proxy_connect_read_timeout](#proxy_connect_read_timeout)
+      * [proxy_connect_write_timeout](#proxy_connect_write_timeout)
+   * [Variables](#variables)
+      * [$connect_host](#connect_host)
+      * [$connect_port](#connect_port)
+      * [$connect_addr](#connect_addr)
+   * [Nginx Compatibility](#nginx-compatibility)
+   * [Tengine Compatibility](#tengine-compatibility)
+   * [Author](#author)
 
 Example
 =======
@@ -70,6 +90,22 @@ $ curl https://github.com/ -v -x 127.0.0.1:3128
 
 Also you can configure your browser to use this nginx as PROXY server.
 
+Install
+=======
+
+Install this module from source:
+
+```
+$ wget http://nginx.org/download/nginx-1.9.2.tar.gz
+$ tar -xzvf nginx-1.9.2.tar.gz
+$ cd nginx-1.9.2/
+$ patch -p1 < /path/to/ngx_http_proxy_connect_module/proxy_connect.patch
+$ ./configure --add-module=/path/to/ngx_http_proxy_connect_module
+$ make && make install
+```
+
+Note that `proxy_connect.patch` includes logic in macro NGX_HTTP_RPOXY_CONNECT, and [config](https://github.com/chobits/ngx_http_proxy_connect_module/blob/master/config#L5) script will enable this macro automatically.
+
 Directive
 =========
 
@@ -127,9 +163,9 @@ If the proxied server does not transmit anything within this time, the connectio
 proxy_connect_write_timeout
 ---------------------------
 
-Syntax: **proxy_connect_write_timeout `time`**
-Default: `60s`
-Context: `server`
+Syntax: **proxy_connect_write_timeout `time`**  
+Default: `60s`  
+Context: `server`  
 
 Sets a timeout for transmitting a request to the proxied server.  
 The timeout is set only between two successive write operations, not for the transmission of the whole request.  
@@ -171,25 +207,7 @@ Tengine Compatibility
 
 This module will be merged into tengine soon, see [this pull request](https://github.com/alibaba/tengine/pull/335/).
 
-Install
-=======
-
-Install this module from source:
-
-```
-$ wget http://nginx.org/download/nginx-1.9.2.tar.gz
-$ tar -xzvf nginx-1.9.2.tar.gz
-$ cd nginx-1.9.2/
-$ patch -p1 < /path/to/ngx_http_proxy_connect_module/proxy_connect.patch
-$ ./configure --add-module=/path/to/ngx_http_proxy_connect_module
-$ make && make install
-```
-
-Note that `proxy_connect.patch` includes logic in macro NGX_HTTP_RPOXY_CONNECT, and [config](https://github.com/chobits/ngx_http_proxy_connect_module/blob/master/config#L5) script will enable this macro automatically.
-
 Author
 ======
-This module was developed by [Peng Qi](https://github.com/jinglong) originally.  
-He contributed this module to [Tengine](https://github.com/tengine) in this [pull request](https://github.com/alibaba/tengine/pull/335/).  
-
-I build this module for Nginx proper based on his pull request.
+* [Peng Qi](https://github.com/jinglong): original author. He contributed this module to [Tengine](https://github.com/tengine) in this [pull request](https://github.com/alibaba/tengine/pull/335/).  
+* [Xiaochen Wang](https://github.com/chobits): current maintainer. Rebuild this module for nginx.
