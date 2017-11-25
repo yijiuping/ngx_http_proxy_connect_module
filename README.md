@@ -89,7 +89,9 @@ $ curl https://github.com/ -v -x 127.0.0.1:3128
 ...
 ```
 
-Also you can configure your browser to use this nginx as PROXY server.
+Also you can configure your browser to use this nginx as PROXY server (e.g. Google Chrome HTTP PROXY SETTING).
+
+Here is another [guide & config](https://github.com/chobits/ngx_http_proxy_connect_module/issues/22#issuecomment-346941271) for how to configure this module working under SSL layer (for supporing Google Chrome HTTPS PROXY SETTING).
 
 Install
 =======
