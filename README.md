@@ -135,6 +135,35 @@ Sets a timeout for transmitting a request to the proxied server.
 The timeout is set only between two successive write operations, not for the transmission of the whole request.  
 If the proxied server does not receive anything within this time, the connection is closed.
 
+proxy_connect_address
+---------------------------
+
+Syntax: **proxy_connect_address `address [transparent] | off`**
+Default: `none`
+Context: `server`
+
+Specifiy an IP address of the proxied server. The address can contain variables. The special value off is equal to none,
+which uses the IP address resolved from host name of CONNECT request line.
+
+proxy_connect_bind_
+---------------------------
+
+Syntax: **proxy_connect_bind `address | off`**
+Default: `none`
+Context: `server`
+
+Makes outgoing connections to a proxied server originate from the specified local IP address with an optional port.
+Parameter value can contain variables. The special value off is equal to none, which allows the system to auto-assign
+the local IP address and port.
+
+The transparent parameter allows outgoing connections to a proxied server originate from a non-local IP address, for
+example, from a real IP address of a client:
+
+```
+proxy_connect_bind $remote_addr transparent;
+
+```
+
 Nginx Compatibility
 ===================
 
