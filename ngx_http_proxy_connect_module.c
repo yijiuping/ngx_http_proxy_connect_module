@@ -80,6 +80,9 @@ typedef struct {
 } ngx_http_proxy_connect_ctx_t;
 
 
+static ngx_int_t ngx_http_proxy_connect_add_variables(ngx_conf_t *cf);
+static ngx_int_t ngx_http_proxy_connect_connect_addr_variable(
+    ngx_http_request_t *r, ngx_http_variable_value_t *v, uintptr_t data);
 static char *ngx_http_proxy_connect(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_http_proxy_connect_allow(ngx_conf_t *cf, ngx_command_t *cmd,
@@ -166,7 +169,7 @@ static ngx_command_t  ngx_http_proxy_connect_commands[] = {
 
 
 static ngx_http_module_t  ngx_http_proxy_connect_module_ctx = {
-    NULL,   /* preconfiguration */
+    ngx_http_proxy_connect_add_variables,   /* preconfiguration */
     NULL,                                   /* postconfiguration */
 
     NULL,                                   /* create main configuration */
@@ -193,6 +196,16 @@ ngx_module_t  ngx_http_proxy_connect_module = {
     NULL,                                   /* exit process */
     NULL,                                   /* exit master */
     NGX_MODULE_V1_PADDING
+};
+
+
+static ngx_http_variable_t  ngx_http_proxy_connect_vars[] = {
+
+    { ngx_string("connect_addr"), NULL,
+      ngx_http_proxy_connect_connect_addr_variable,
+      0, NGX_HTTP_VAR_NOCACHEABLE, 0 },
+
+    { ngx_null_string, NULL, NULL, 0, 0, 0 }
 };
 
 
@@ -1793,4 +1806,55 @@ ngx_http_proxy_connect_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_ptr_value(conf->local, prev->local, NULL);
 
     return NGX_CONF_OK;
+}
+
+
+static ngx_int_t
+ngx_http_proxy_connect_connect_addr_variable(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data)
+{
+
+    ngx_http_proxy_connect_upstream_t     *u;
+    ngx_http_proxy_connect_ctx_t          *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);
+
+    if (ctx == NULL) {
+        v->not_found = 1;
+        return NGX_OK;
+    }
+
+    u = ctx->u;
+
+    if (u == NULL || u->peer.name == NULL) {
+        v->not_found = 1;
+        return NGX_OK;
+    }
+
+    v->len = u->peer.name->len;
+    v->valid = 1;
+    v->no_cacheable = 0;
+    v->not_found = 0;
+    v->data = u->peer.name->data;
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_proxy_connect_add_variables(ngx_conf_t *cf)
+{
+    ngx_http_variable_t  *var, *v;
+
+    for (v = ngx_http_proxy_connect_vars; v->name.len; v++) {
+        var = ngx_http_add_variable(cf, &v->name, v->flags);
+        if (var == NULL) {
+            return NGX_ERROR;
+        }
+
+        var->get_handler = v->get_handler;
+        var->data = v->data;
+    }
+
+    return NGX_OK;
 }

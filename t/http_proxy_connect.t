@@ -35,6 +35,11 @@ events {
 http {
     %%TEST_GLOBALS_HTTP%%
 
+    log_format connect '$remote_addr - $remote_user [$time_local] "$request" '
+                       '$status $body_bytes_sent var:$connect_host-$connect_port-$connect_addr';
+
+    access_log %%TESTDIR%%/connect.log connect;
+
     resolver 8.8.8.8;
 
     server {
@@ -42,6 +47,7 @@ http {
         listen  8082;
         listen  8083;
         server_name server_8081;
+        access_log off;
         location / {
             return 200 "hello $remote_addr $server_port\n";
         }
@@ -79,6 +85,12 @@ http {
         location = /hello {
             return 200 "world";
         }
+
+        # used to output connect.log
+        location = /connect.log {
+            access_log off;
+            root %%TESTDIR%%/;
+        }
     }
 }
 
@@ -97,6 +109,12 @@ like(http_get('/'), qr/hello/, 'Get method: proxy_pass');
 like(http_get('/hello'), qr/world/, 'Get method: return 200');
 like(http_connect_request('address.com', '8081', '/'), qr/hello 127.0.0.1 8082/, 'set remote address');
 like(http_connect_request('bind.com', '8081', '/'), qr/hello 127.0.0.3 8083/, 'set local address and remote address');
+
+
+# test $connect_host, $connect_port
+my $log = http_get('/connect.log');
+like($log, qr/CONNECT 127\.0\.0\.1:8081.*var:127\.0\.0\.1-8081-127\.0\.0\.1:8081/, '$connect_host, $connect_port, $connect_addr');
+like($log, qr/CONNECT www\.taobao111114\.com:80.*var:www\.taobao111114\.com-80--/, 'empty variable $connect_addr');
 
 $t->stop();
 
