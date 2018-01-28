@@ -204,7 +204,7 @@ for example, from a real IP address of a client:
 proxy_connect_bind $remote_addr transparent;
 
 ```
-=======
+
 Variables
 =========
 
