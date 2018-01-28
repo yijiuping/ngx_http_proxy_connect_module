@@ -44,10 +44,12 @@ http {
 
     server {
         listen  8081;
+        listen  8082;
+        listen  8083;
         server_name server_8081;
         access_log off;
         location / {
-            return 200 "hello\n";
+            return 200 "hello $remote_addr $server_port\n";
         }
     }
 
@@ -55,6 +57,8 @@ http {
         listen       127.0.0.1:8080;
         server_name  localhost;
 
+        set $proxy_remote_address "";
+        set $proxy_local_address "";
         # forward proxy for CONNECT method
         proxy_connect;
         proxy_connect_allow 443 80 8081;
@@ -62,6 +66,17 @@ http {
         proxy_connect_read_timeout 10s;
         proxy_connect_send_timeout 10s;
         proxy_connect_send_lowat 0;
+        proxy_connect_address $proxy_remote_address;
+        proxy_connect_bind $proxy_local_address;
+
+        if ($host = "address.com") {
+            set $proxy_remote_address "127.0.0.1:8082";
+        }
+
+        if ($host = "bind.com") {
+            set $proxy_remote_address "127.0.0.1:8083";
+            set $proxy_local_address "127.0.0.3";
+        }
 
         location / {
             proxy_pass http://127.0.0.1:8081;
@@ -92,6 +107,8 @@ like(http_connect_request('www.taobao111114.com', '80', '/'), qr/502/, '200 Conn
 like(http_connect_request('127.0.0.1', '9999', '/'), qr/403/, '200 Connection Established not allowed port');
 like(http_get('/'), qr/hello/, 'Get method: proxy_pass');
 like(http_get('/hello'), qr/world/, 'Get method: return 200');
+like(http_connect_request('address.com', '8081', '/'), qr/hello 127.0.0.1 8082/, 'set remote address');
+like(http_connect_request('bind.com', '8081', '/'), qr/hello 127.0.0.3 8083/, 'set local address and remote address');
 
 
 # test $connect_host, $connect_port

@@ -16,6 +16,8 @@ Table of Contents
       * [proxy_connect_connect_timeout](#proxy_connect_connect_timeout)
       * [proxy_connect_read_timeout](#proxy_connect_read_timeout)
       * [proxy_connect_write_timeout](#proxy_connect_write_timeout)
+      * [proxy_connect_address](#proxy_connect_address)
+      * [proxy_connect_bind](#proxy_connect_bind)
    * [Variables](#variables)
       * [$connect_host](#connect_host)
       * [$connect_port](#connect_port)
@@ -107,7 +109,11 @@ $ ./configure --add-module=/path/to/ngx_http_proxy_connect_module
 $ make && make install
 ```
 
-Note that `proxy_connect.patch` includes logic in macro NGX_HTTP_RPOXY_CONNECT, and [config](https://github.com/chobits/ngx_http_proxy_connect_module/blob/master/config#L5) script will enable this macro automatically.
+Note that `proxy_connect.patch` includes logic in macro NGX_HTTP_RPOXY_CONNECT, and [config](https://github.com/chobits/ngx_http_proxy_connect_module/blob/master/config#L5) script will enable this macro automatically.  
+
+This module disables nginx REWRITE phase for CONNECT request by default, which means `if`, `set`, `rewrite_by_lua` and other rewrite directives cannot be used. To enable these, you should use `proxy_connect_rewrite.patch` instead of `proxy_connect.patch`. (`TODO`: merge two patches into one.)
+
+
 
 Directive
 =========
@@ -174,6 +180,37 @@ Sets a timeout for transmitting a request to the proxied server.
 The timeout is set only between two successive write operations, not for the transmission of the whole request.  
 If the proxied server does not receive anything within this time, the connection is closed.
 
+proxy_connect_address
+---------------------
+
+Syntax: **proxy_connect_address `address [transparent] | off`**  
+Default: `none`  
+Context: `server`  
+
+Specifiy an IP address of the proxied server. The address can contain variables.  
+The special value off is equal to none, which uses the IP address resolved from host name of CONNECT request line.  
+
+NOTE: If using `set $<nginx variable>` and `proxy_connect_address $<nginx variable>` together, you should use `proxy_connect_rewrite.patch` instead, see [Install](#install) for more details.
+
+proxy_connect_bind
+------------------
+
+Syntax: **proxy_connect_bind `address | off`**  
+Default: `none`  
+Context: `server`  
+
+Makes outgoing connections to a proxied server originate from the specified local IP address with an optional port.  
+Parameter value can contain variables. The special value off is equal to none, which allows the system to auto-assign the local IP address and port.
+
+The transparent parameter allows outgoing connections to a proxied server originate from a non-local IP address, for example, from a real IP address of a client:
+
+```
+proxy_connect_bind $remote_addr transparent;
+
+```
+
+NOTE: If using `set $<nginx variable>` and `proxy_connect_bind $<nginx variable>` together, you should use `proxy_connect_rewrite.patch` instead, see [Install](#install) for more details.
+
 Variables
 =========
 
@@ -192,7 +229,6 @@ $connect_addr
 
 IP address and port of the remote host, e.g. "192.168.1.5:12345".
 IP address is resolved from host name of CONNECT request line.
-
 
 Nginx Compatibility
 ===================
