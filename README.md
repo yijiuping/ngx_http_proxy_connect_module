@@ -109,7 +109,11 @@ $ ./configure --add-module=/path/to/ngx_http_proxy_connect_module
 $ make && make install
 ```
 
-Note that `proxy_connect.patch` includes logic in macro NGX_HTTP_RPOXY_CONNECT, and [config](https://github.com/chobits/ngx_http_proxy_connect_module/blob/master/config#L5) script will enable this macro automatically.
+Note that `proxy_connect.patch` includes logic in macro NGX_HTTP_RPOXY_CONNECT, and [config](https://github.com/chobits/ngx_http_proxy_connect_module/blob/master/config#L5) script will enable this macro automatically.  
+
+This module disables nginx REWRITE phase for CONNECT request by default, which means `if`, `set`, `rewrite_by_lua` and other rewrite directives cannot be used. To enable these, you should use `proxy_connect_rewrite.patch` instead of `proxy_connect.patch`. (`TODO`: merge two patches into one.)
+
+
 
 Directive
 =========
