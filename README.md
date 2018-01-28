@@ -187,8 +187,10 @@ Syntax: **proxy_connect_address `address [transparent] | off`**
 Default: `none`  
 Context: `server`  
 
-Specifiy an IP address of the proxied server. The address can contain variables. The special value off is equal to none,  
-which uses the IP address resolved from host name of CONNECT request line.
+Specifiy an IP address of the proxied server. The address can contain variables.  
+The special value off is equal to none, which uses the IP address resolved from host name of CONNECT request line.  
+
+NOTE: If using `set $<nginx variable>` and `proxy_connect_address $<nginx variable>` together, you should use `proxy_connect_rewrite.patch` instead, see [Install](#install) for more details.
 
 proxy_connect_bind
 ------------------
@@ -198,16 +200,16 @@ Default: `none`
 Context: `server`  
 
 Makes outgoing connections to a proxied server originate from the specified local IP address with an optional port.  
-Parameter value can contain variables. The special value off is equal to none, which allows the system to auto-assign  
-the local IP address and port.
+Parameter value can contain variables. The special value off is equal to none, which allows the system to auto-assign the local IP address and port.
 
-The transparent parameter allows outgoing connections to a proxied server originate from a non-local IP address,  
-for example, from a real IP address of a client:
+The transparent parameter allows outgoing connections to a proxied server originate from a non-local IP address, for example, from a real IP address of a client:
 
 ```
 proxy_connect_bind $remote_addr transparent;
 
 ```
+
+NOTE: If using `set $<nginx variable>` and `proxy_connect_bind $<nginx variable>` together, you should use `proxy_connect_rewrite.patch` instead, see [Install](#install) for more details.
 
 Variables
 =========
