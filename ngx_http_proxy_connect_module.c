@@ -1509,7 +1509,7 @@ ngx_http_proxy_connect_address(ngx_conf_t *cf, ngx_command_t *cmd,
         return NGX_CONF_ERROR;
     }
 
-    address = ngx_pcalloc(cf->pool, sizeof(ngx_http_upstream_local_t));
+    address = ngx_pcalloc(cf->pool, sizeof(ngx_http_proxy_connect_address_t));
     if (address == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -1561,10 +1561,10 @@ ngx_http_proxy_connect_bind(ngx_conf_t *cf, ngx_command_t *cmd,
     ngx_int_t                           rc;
     ngx_str_t                          *value;
     ngx_http_complex_value_t            cv;
-    ngx_http_upstream_local_t         **plocal, *local;
+    ngx_http_proxy_connect_address_t         **plocal, *local;
     ngx_http_compile_complex_value_t    ccv;
 
-    plocal = (ngx_http_upstream_local_t **) (p + cmd->offset);
+    plocal = (ngx_http_proxy_connect_address_t **) (p + cmd->offset);
 
     if (*plocal != NGX_CONF_UNSET_PTR) {
         return "is duplicate";
@@ -1587,7 +1587,7 @@ ngx_http_proxy_connect_bind(ngx_conf_t *cf, ngx_command_t *cmd,
         return NGX_CONF_ERROR;
     }
 
-    local = ngx_pcalloc(cf->pool, sizeof(ngx_http_upstream_local_t));
+    local = ngx_pcalloc(cf->pool, sizeof(ngx_http_proxy_connect_address_t));
     if (local == NULL) {
         return NGX_CONF_ERROR;
     }
