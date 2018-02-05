@@ -209,6 +209,110 @@ static ngx_http_variable_t  ngx_http_proxy_connect_vars[] = {
 };
 
 
+#if 1
+
+/*
+ * #if defined(nginx_version) && nginx_version <= 1009015
+ *
+ * from src/core/ngx_inet.c: ngx_inet_set_port & ngx_parse_addr_port
+ *
+ * redefined to __ngx_inet_set_port & __ngx_parse_addr_port to
+ * avoid too many `#if nginx_version > ...` macro
+ */
+static void
+__ngx_inet_set_port(struct sockaddr *sa, in_port_t port)
+{
+    struct sockaddr_in   *sin;
+#if (NGX_HAVE_INET6)
+    struct sockaddr_in6  *sin6;
+#endif
+
+    switch (sa->sa_family) {
+
+#if (NGX_HAVE_INET6)
+    case AF_INET6:
+        sin6 = (struct sockaddr_in6 *) sa;
+        sin6->sin6_port = htons(port);
+        break;
+#endif
+
+#if (NGX_HAVE_UNIX_DOMAIN)
+    case AF_UNIX:
+        break;
+#endif
+
+    default: /* AF_INET */
+        sin = (struct sockaddr_in *) sa;
+        sin->sin_port = htons(port);
+        break;
+    }
+}
+
+
+static ngx_int_t
+__ngx_parse_addr_port(ngx_pool_t *pool, ngx_addr_t *addr, u_char *text,
+    size_t len)
+{
+    u_char     *p, *last;
+    size_t      plen;
+    ngx_int_t   rc, port;
+
+    rc = ngx_parse_addr(pool, addr, text, len);
+
+    if (rc != NGX_DECLINED) {
+        return rc;
+    }
+
+    last = text + len;
+
+#if (NGX_HAVE_INET6)
+    if (len && text[0] == '[') {
+
+        p = ngx_strlchr(text, last, ']');
+
+        if (p == NULL || p == last - 1 || *++p != ':') {
+            return NGX_DECLINED;
+        }
+
+        text++;
+        len -= 2;
+
+    } else
+#endif
+
+    {
+        p = ngx_strlchr(text, last, ':');
+
+        if (p == NULL) {
+            return NGX_DECLINED;
+        }
+    }
+
+    p++;
+    plen = last - p;
+
+    port = ngx_atoi(p, plen);
+
+    if (port < 1 || port > 65535) {
+        return NGX_DECLINED;
+    }
+
+    len -= plen + 1;
+
+    rc = ngx_parse_addr(pool, addr, text, len);
+
+    if (rc != NGX_OK) {
+        return rc;
+    }
+
+    __ngx_inet_set_port(addr->sockaddr, (in_port_t) port);
+
+    return NGX_OK;
+}
+
+#endif
+
+
 static ngx_int_t
 ngx_http_proxy_connect_get_peer(ngx_peer_connection_t *pc, void *data)
 {
@@ -1530,8 +1634,8 @@ ngx_http_proxy_connect_address(ngx_conf_t *cf, ngx_command_t *cmd,
             return NGX_CONF_ERROR;
         }
 
-        rc = ngx_parse_addr_port(cf->pool, address->addr, value[1].data,
-                                 value[1].len);
+        rc = __ngx_parse_addr_port(cf->pool, address->addr, value[1].data,
+                                   value[1].len);
 
         switch (rc) {
         case NGX_OK:
@@ -1561,7 +1665,7 @@ ngx_http_proxy_connect_bind(ngx_conf_t *cf, ngx_command_t *cmd,
     ngx_int_t                           rc;
     ngx_str_t                          *value;
     ngx_http_complex_value_t            cv;
-    ngx_http_proxy_connect_address_t         **plocal, *local;
+    ngx_http_proxy_connect_address_t  **plocal, *local;
     ngx_http_compile_complex_value_t    ccv;
 
     plocal = (ngx_http_proxy_connect_address_t **) (p + cmd->offset);
@@ -1608,8 +1712,8 @@ ngx_http_proxy_connect_bind(ngx_conf_t *cf, ngx_command_t *cmd,
             return NGX_CONF_ERROR;
         }
 
-        rc = ngx_parse_addr_port(cf->pool, local->addr, value[1].data,
-                                 value[1].len);
+        rc = __ngx_parse_addr_port(cf->pool, local->addr, value[1].data,
+                                   value[1].len);
 
         switch (rc) {
         case NGX_OK:
@@ -1681,7 +1785,7 @@ ngx_http_proxy_connect_set_local(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    rc = ngx_parse_addr_port(r->pool, addr, val.data, val.len);
+    rc = __ngx_parse_addr_port(r->pool, addr, val.data, val.len);
     if (rc == NGX_ERROR) {
         return NGX_ERROR;
     }
@@ -1717,7 +1821,9 @@ ngx_http_proxy_connect_set_address(ngx_http_request_t *r,
         u->resolved->addrs = NULL;
         u->resolved->sockaddr = address->addr->sockaddr;
         u->resolved->socklen = address->addr->socklen;
+#if defined(nginx_version) && nginx_version >= 1011007
         u->resolved->name = address->addr->name;
+#endif
         u->resolved->host = address->addr->name;
 
         return NGX_OK;
@@ -1736,7 +1842,7 @@ ngx_http_proxy_connect_set_address(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    rc = ngx_parse_addr_port(r->pool, addr, val.data, val.len);
+    rc = __ngx_parse_addr_port(r->pool, addr, val.data, val.len);
     if (rc == NGX_ERROR) {
         return NGX_ERROR;
     }
@@ -1750,7 +1856,9 @@ ngx_http_proxy_connect_set_address(ngx_http_request_t *r,
     addr->name = val;
     u->resolved->sockaddr = addr->sockaddr;
     u->resolved->socklen = addr->socklen;
+#if defined(nginx_version) && nginx_version >= 1011007
     u->resolved->name = addr->name;
+#endif
     u->resolved->naddrs = 1;
 
     return NGX_OK;
