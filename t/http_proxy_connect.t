@@ -15,13 +15,14 @@ BEGIN { use FindBin; chdir($FindBin::Bin); }
 
 use lib 'lib';
 use Test::Nginx;
+use Net::DNS::Nameserver;
 
 ###############################################################################
 
 select STDERR; $| = 1;
 select STDOUT; $| = 1;
 
-my $t = Test::Nginx->new()->has(qw/http proxy/)->plan(10);
+my $t = Test::Nginx->new()->has(qw/http proxy/)->plan(12);
 
 $t->write_file_expand('nginx.conf', <<'EOF');
 
@@ -40,16 +41,16 @@ http {
 
     access_log %%TESTDIR%%/connect.log connect;
 
-    resolver 8.8.8.8;
+    resolver 127.0.0.1:18085 ipv6=off;      # NOTE: cannot connect ipv6 address ::1 in mac os x.
 
     server {
         listen  8081;
-        listen  8082;
-        listen  8083;
+        listen  8082;   # address.com
+        listen  8083;   # bind.conm
         server_name server_8081;
         access_log off;
         location / {
-            return 200 "hello $remote_addr $server_port\n";
+            return 200 "backend server: addr:$remote_addr port:$server_port host:$host\n";
         }
     }
 
@@ -75,7 +76,7 @@ http {
 
         if ($host = "bind.com") {
             set $proxy_remote_address "127.0.0.1:8083";
-            set $proxy_local_address "127.0.0.3";
+            set $proxy_local_address "127.0.0.1";   # NOTE that we cannot bind 127.0.0.3 in mac os x.
         }
 
         location / {
@@ -98,23 +99,54 @@ EOF
 
 ###############################################################################
 
+
+# --- init DNS server ---
+
+my $bind_pid;
+my $bind_server_port = 18085;
+
+# SRV record, not used
+my %route_map;
+
+# A record
+my %aroute_map = (
+    'www.baidu.com' => [[300, "127.0.0.1"]],
+    'www.taobao.com' => [[300, "127.0.0.1"]],
+);
+
+# AAAA record (ipv6)
+my %aaaaroute_map;
+# my %aaaaroute_map = (
+#     'www.baidu.com' => [[300, "[::1]"]],
+#     'www.taobao.com' => [[300, "[::1]"]],
+#     #'www.baidu.com' => [[300, "127.0.0.1"]],
+#     #'www.taobao.com' => [[300, "127.0.0.1"]],
+# );
+
+
+start_bind();
+
+
+# --- end ---
+
+
 $t->run();
 
-like(http_connect_request('127.0.0.1', '8081', '/'), qr/hello/, '200 Connection Established');
-like(http_connect_request('www.baidu.com', '80', '/'), qr/baidu/, '200 Connection Established server name');
-like(http_connect_request('www.taobao.com', '80', '/'), qr/taobao/, '200 Connection Established server name');
-like(http_connect_request('www.taobao111114.com', '80', '/'), qr/502/, '200 Connection Established server name');
+like(http_connect_request('127.0.0.1', '8081', '/'), qr/backend server/, '200 Connection Established');
+like(http_connect_request('www.baidu.com', '8081', '/'), qr/host:www\.baidu\.com/, '200 Connection Established server name');
+like(http_connect_request('www.taobao.com', '8081', '/'), qr/host:www\.taobao\.com/, '200 Connection Established server name');
+like(http_connect_request('www.no-dns-reply.com', '80', '/'), qr/502/, '200 Connection Established server name');
 like(http_connect_request('127.0.0.1', '9999', '/'), qr/403/, '200 Connection Established not allowed port');
-like(http_get('/'), qr/hello/, 'Get method: proxy_pass');
+like(http_get('/'), qr/backend server/, 'Get method: proxy_pass');
 like(http_get('/hello'), qr/world/, 'Get method: return 200');
-like(http_connect_request('address.com', '8081', '/'), qr/hello 127.0.0.1 8082/, 'set remote address');
-like(http_connect_request('bind.com', '8081', '/'), qr/hello 127.0.0.3 8083/, 'set local address and remote address');
+like(http_connect_request('address.com', '8081', '/'), qr/backend server: addr:127.0.0.1 port:8082/, 'set remote address');
+like(http_connect_request('bind.com', '8081', '/'), qr/backend server: addr:127.0.0.1 port:8083/, 'set local address and remote address');
 
 
 # test $connect_host, $connect_port
 my $log = http_get('/connect.log');
 like($log, qr/CONNECT 127\.0\.0\.1:8081.*var:127\.0\.0\.1-8081-127\.0\.0\.1:8081/, '$connect_host, $connect_port, $connect_addr');
-like($log, qr/CONNECT www\.taobao111114\.com:80.*var:www\.taobao111114\.com-80--/, 'empty variable $connect_addr');
+like($log, qr/CONNECT www\.no-dns-reply\.com:80.*var:www\.no-dns-reply\.com-80--/, 'empty variable $connect_addr');
 
 $t->stop();
 
@@ -138,7 +170,6 @@ http {
     access_log %%TESTDIR%%/connect.log connect;
 
     server {
-        listen  8081;
         listen  8082;
         access_log off;
         location / {
@@ -175,6 +206,8 @@ EOF
 $t->run();
 like(http_connect_request('address.com', '8081', '/'), qr/hello 127.0.0.1 8082/, 'set remote address without nginx variable');
 $t->stop();
+
+stop_bind();
 
 ###############################################################################
 
@@ -229,4 +262,106 @@ EOF
     log_in($reply);
     return $reply;
 }
+
+# --- DNS Server ---
+
+sub reply_handler {
+    my ($qname, $qclass, $qtype, $peerhost, $query, $conn) = @_;
+    my ($rcode, @ans, @auth, @add);
+    # print("DNS reply: receive query=$qname, $qclass, $qtype, $peerhost, $query, $conn\n");
+
+    if ($qtype eq "SRV" && exists($route_map{$qname})) {
+        my @records = @{$route_map{$qname}};
+        for (my $i = 0; $i < scalar(@records); $i++) {
+            my ($ttl, $weight, $priority, $port, $origin_addr) = @{$records[$i]};
+            my $rr = new Net::DNS::RR("$qname $ttl $qclass $qtype $priority $weight $port $origin_addr");
+            push @ans, $rr;
+            # print("DNS reply: $qname $ttl $qclass $qtype $origin_addr\n");
+        }
+
+        $rcode = "NOERROR";
+    } elsif (($qtype eq "A") && exists($aroute_map{$qname})) {
+        my @records = @{$aroute_map{$qname}};
+        for (my $i = 0; $i < scalar(@records); $i++) {
+            my ($ttl, $origin_addr) = @{$records[$i]};
+            my $rr = new Net::DNS::RR("$qname $ttl $qclass $qtype $origin_addr");
+            push @ans, $rr;
+            # print("DNS reply: $qname $ttl $qclass $qtype $origin_addr\n");
+        }
+
+        $rcode = "NOERROR";
+    } elsif (($qtype eq "AAAA") && exists($aaaaroute_map{$qname})) {
+        my @records = @{$aaaaroute_map{$qname}};
+        for (my $i = 0; $i < scalar(@records); $i++) {
+            my ($ttl, $origin_addr) = @{$records[$i]};
+            my $rr = new Net::DNS::RR("$qname $ttl $qclass $qtype $origin_addr");
+            push @ans, $rr;
+            # print("DNS reply: $qname $ttl $qclass $qtype $origin_addr\n");
+        }
+
+        $rcode = "NOERROR";
+    } else {
+        $rcode = "NXDOMAIN";
+    }
+
+    # mark the answer as authoritative (by setting the 'aa' flag)
+    my $headermask = { ra => 1 };
+
+    # specify EDNS options  { option => value }
+    my $optionmask = { };
+
+    return ($rcode, \@ans, \@auth, \@add, $headermask, $optionmask);
+}
+
+sub bind_daemon {
+    my $ns = new Net::DNS::Nameserver(
+        LocalAddr        => ['127.0.0.1'],
+        LocalPort        => $bind_server_port,
+        ReplyHandler     => \&reply_handler,
+        Verbose          => 0, # Verbose = 1 to print debug info
+        Truncate         => 0
+    ) || die "[D] DNS server: couldn't create nameserver object\n";
+
+    $ns->main_loop;
+}
+
+sub start_bind {
+    if (defined $bind_server_port) {
+
+        print "DNS server: try to bind server port: $bind_server_port\n";
+
+        $t->run_daemon(\&bind_daemon);
+        $bind_pid = pop @{$t->{_daemons}};
+
+        print "DNS server: daemon pid: $bind_pid\n";
+
+        my $s;
+        my $i = 1;
+        while (not $s) {
+            $s = IO::Socket::INET->new(
+                 Proto    => 'tcp',
+                 PeerAddr => "127.0.0.1",
+                 PeerPort => $bind_server_port
+            );
+            sleep 0.1;
+            $i++ > 20 and last;
+        }
+        sleep 0.1;
+        $s and close($s) || die 'can not connect to DNS server';
+
+        print "DNS server: working\n";
+    }
+}
+
+sub stop_bind {
+    if (defined $bind_pid) {
+        # kill dns daemon
+        kill $^O eq 'MSWin32' ? 15 : 'TERM', $bind_pid;
+        wait;
+
+        $bind_pid = undef;
+        print ("DNS server: stop");
+    }
+}
+
 ###############################################################################
