@@ -10,6 +10,7 @@ use warnings;
 use strict;
 
 use Test::More;
+# use Test::Simple 'no_plan';
 
 BEGIN { use FindBin; chdir($FindBin::Bin); }
 
@@ -22,9 +23,46 @@ use Net::DNS::Nameserver;
 select STDERR; $| = 1;
 select STDOUT; $| = 1;
 
-my $t = Test::Nginx->new()->has(qw/http proxy/)->plan(12);
+my $t = Test::Nginx->new()->has(qw/http proxy/); #->plan(12);
 
-$t->write_file_expand('nginx.conf', <<'EOF');
+###############################################################################
+
+my $test_enable_rewrite_phase = 0;
+
+if (defined $ENV{TEST_ENABLE_REWRITE_PHASE}) {
+    $test_enable_rewrite_phase = 1;
+}
+
+# --- init DNS server ---
+
+my $bind_pid;
+my $bind_server_port = 18085;
+
+# SRV record, not used
+my %route_map;
+
+# A record
+my %aroute_map = (
+    'www.baidu.com' => [[300, "127.0.0.1"]],
+    'www.taobao.com' => [[300, "127.0.0.1"]],
+);
+
+# AAAA record (ipv6)
+my %aaaaroute_map;
+# my %aaaaroute_map = (
+#     'www.baidu.com' => [[300, "[::1]"]],
+#     'www.taobao.com' => [[300, "[::1]"]],
+#     #'www.baidu.com' => [[300, "127.0.0.1"]],
+#     #'www.taobao.com' => [[300, "127.0.0.1"]],
+# );
+
+start_bind();
+
+# --- end ---
+
+###############################################################################
+
+my $nginx_conf = <<'EOF';
 
 %%TEST_GLOBALS%%
 
@@ -97,40 +135,19 @@ http {
 
 EOF
 
-###############################################################################
+$t->write_file_expand('nginx.conf', $nginx_conf);
 
+eval {
+    $t->run();
+};
 
-# --- init DNS server ---
+if ($@) {
+    print("+ Retry new nginx conf: remove \"ipv6=off\"\n");
 
-my $bind_pid;
-my $bind_server_port = 18085;
-
-# SRV record, not used
-my %route_map;
-
-# A record
-my %aroute_map = (
-    'www.baidu.com' => [[300, "127.0.0.1"]],
-    'www.taobao.com' => [[300, "127.0.0.1"]],
-);
-
-# AAAA record (ipv6)
-my %aaaaroute_map;
-# my %aaaaroute_map = (
-#     'www.baidu.com' => [[300, "[::1]"]],
-#     'www.taobao.com' => [[300, "[::1]"]],
-#     #'www.baidu.com' => [[300, "127.0.0.1"]],
-#     #'www.taobao.com' => [[300, "127.0.0.1"]],
-# );
-
-
-start_bind();
-
-
-# --- end ---
-
-
-$t->run();
+    $nginx_conf =~ s/ ipv6=off;/;/g;        # remove ipv6=off in resolver directive.
+    $t->write_file_expand('nginx.conf', $nginx_conf);
+    $t->run();
+}
 
 like(http_connect_request('127.0.0.1', '8081', '/'), qr/backend server/, '200 Connection Established');
 like(http_connect_request('www.baidu.com', '8081', '/'), qr/host:www\.baidu\.com/, '200 Connection Established server name');
@@ -139,14 +156,17 @@ like(http_connect_request('www.no-dns-reply.com', '80', '/'), qr/502/, '200 Conn
 like(http_connect_request('127.0.0.1', '9999', '/'), qr/403/, '200 Connection Established not allowed port');
 like(http_get('/'), qr/backend server/, 'Get method: proxy_pass');
 like(http_get('/hello'), qr/world/, 'Get method: return 200');
-like(http_connect_request('address.com', '8081', '/'), qr/backend server: addr:127.0.0.1 port:8082/, 'set remote address');
-like(http_connect_request('bind.com', '8081', '/'), qr/backend server: addr:127.0.0.1 port:8083/, 'set local address and remote address');
+
+if ($test_enable_rewrite_phase) {
+    like(http_connect_request('address.com', '8081', '/'), qr/backend server: addr:127.0.0.1 port:8082/, 'set remote address');
+    like(http_connect_request('bind.com', '8081', '/'), qr/backend server: addr:127.0.0.1 port:8083/, 'set local address and remote address');
+}
 
 
 # test $connect_host, $connect_port
 my $log = http_get('/connect.log');
 like($log, qr/CONNECT 127\.0\.0\.1:8081.*var:127\.0\.0\.1-8081-127\.0\.0\.1:8081/, '$connect_host, $connect_port, $connect_addr');
-like($log, qr/CONNECT www\.no-dns-reply\.com:80.*var:www\.no-dns-reply\.com-80--/, 'empty variable $connect_addr');
+like($log, qr/CONNECT www\.no-dns-reply\.com:80.*var:www\.no-dns-reply\.com-80--/, 'dns resolver fail');
 
 $t->stop();
 
@@ -164,16 +184,12 @@ events {
 http {
     %%TEST_GLOBALS_HTTP%%
 
-    log_format connect '$remote_addr - $remote_user [$time_local] "$request" '
-                       '$status $body_bytes_sent var:$connect_host-$connect_port-$connect_addr';
-
-    access_log %%TESTDIR%%/connect.log connect;
+    access_log off;
 
     server {
         listen  8082;
-        access_log off;
         location / {
-            return 200 "hello $remote_addr $server_port\n";
+            return 200 "backend server: $remote_addr $server_port\n";
         }
     }
 
@@ -186,17 +202,7 @@ http {
         proxy_connect;
         proxy_connect_allow all;
 
-        proxy_connect_connect_timeout 10s;
-        proxy_connect_read_timeout 10s;
-        proxy_connect_send_timeout 10s;
-        proxy_connect_send_lowat 0;
-
         proxy_connect_address 127.0.0.1:8082;
-#        proxy_connect_bind 127.0.0.3;
-
-        location / {
-            proxy_pass http://127.0.0.1:8081;
-        }
     }
 }
 
@@ -204,10 +210,15 @@ EOF
 
 
 $t->run();
-like(http_connect_request('address.com', '8081', '/'), qr/hello 127.0.0.1 8082/, 'set remote address without nginx variable');
+like(http_connect_request('address.com', '8081', '/'), qr/backend server: 127.0.0.1 8082/, 'set remote address without nginx variable');
 $t->stop();
 
+
+# --- stop DNS server ---
+
 stop_bind();
+
+done_testing();
 
 ###############################################################################
 
@@ -360,7 +371,7 @@ sub stop_bind {
         wait;
 
         $bind_pid = undef;
-        print ("DNS server: stop");
+        print ("DNS server: stop\n");
     }
 }
 
