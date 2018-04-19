@@ -203,6 +203,12 @@ http {
         proxy_connect_allow all;
 
         proxy_connect_address 127.0.0.1:8082;
+
+        if ($host = "if-return-skip.com") {
+            return 200 "if-return\n";
+        }
+
+        return 200 "skip proxy connect: $host,$uri,$request_uri,$args\n";
     }
 }
 
@@ -210,7 +216,12 @@ EOF
 
 
 $t->run();
-like(http_connect_request('address.com', '8081', '/'), qr/backend server: 127.0.0.1 8082/, 'set remote address without nginx variable');
+if ($test_enable_rewrite_phase) {
+    like(http_connect_request('address.com', '8081', '/'), qr/skip proxy connect/, 'skip proxy connect module without rewrite phase enabled');
+    like(http_connect_request('if-return-skip.com', '8081', '/'), qr/if-return/, 'skip proxy connect module without rewrite phase enabled: if/return');
+} else {
+    like(http_connect_request('address.com', '8081', '/'), qr/backend server: 127.0.0.1 8082/, 'set remote address without nginx variable');
+}
 $t->stop();
 
 

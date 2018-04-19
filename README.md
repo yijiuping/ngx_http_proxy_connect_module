@@ -127,7 +127,20 @@ Here is another [guide & config](https://github.com/chobits/ngx_http_proxy_conne
 Install
 =======
 
-Install this module from source:
+* Select right patch for building:
+
+| nginx version | enable REWRITE phase | patch |
+| --: | --: | --: |
+| 1.4.x ~ 1.12.x  | NO  | [proxy_connect.patch](patch/proxy_connect.patch) |
+| 1.4.x ~ 1.12.x  | YES | [proxy_connect_rewrite.patch](patch/proxy_connect_rewrite.patch) |
+| 1.13.x ~ 1.14.x | NO  | [proxy_connect_1014.patch](patch/proxy_connect_1014.patch) |
+| 1.13.x ~ 1.14.x | YES | [proxy_connect_1014_rewrite.patch](patch/proxy_connect_1014_rewrite.patch) |
+
+`proxy_connect.patch` includes logic in macro NGX_HTTP_RPOXY_CONNECT, and [config](https://github.com/chobits/ngx_http_proxy_connect_module/blob/master/config#L5) script will enable this macro automatically.  
+
+This module disables nginx REWRITE phase for CONNECT request by default, which means `if`, `set`, `rewrite_by_lua` and other REWRITE phase directives cannot be used. To enable these, you should use `proxy_connect_rewrite.patch` instead of `proxy_connect.patch`. (`TODO`: merge two patches into one.)
+
+* Install this module from source:
 
 ```
 $ wget http://nginx.org/download/nginx-1.9.2.tar.gz
@@ -137,11 +150,6 @@ $ patch -p1 < /path/to/ngx_http_proxy_connect_module/proxy_connect.patch
 $ ./configure --add-module=/path/to/ngx_http_proxy_connect_module
 $ make && make install
 ```
-
-Note that `proxy_connect.patch` includes logic in macro NGX_HTTP_RPOXY_CONNECT, and [config](https://github.com/chobits/ngx_http_proxy_connect_module/blob/master/config#L5) script will enable this macro automatically.  
-
-This module disables nginx REWRITE phase for CONNECT request by default, which means `if`, `set`, `rewrite_by_lua` and other rewrite directives cannot be used. To enable these, you should use `proxy_connect_rewrite.patch` instead of `proxy_connect.patch`. (`TODO`: merge two patches into one.)
-
 
 
 Directive
@@ -264,6 +272,7 @@ Nginx Compatibility
 
 The latest module is compatible with the following versions of nginx:
 
+* 1.14.0 (stable version of 1.14.x)
 * 1.12.1 (stable version of 1.12.x)
 * 1.10.3 (stable version of 1.10.x)
 * 1.8.1 (stable version of 1.8.x)
