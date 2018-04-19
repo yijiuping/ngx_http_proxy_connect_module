@@ -134,7 +134,7 @@ Install
 | 1.4.x ~ 1.12.x  | NO  | [proxy_connect.patch](patch/proxy_connect.patch) |
 | 1.4.x ~ 1.12.x  | YES | [proxy_connect_rewrite.patch](patch/proxy_connect_rewrite.patch) |
 | 1.13.x ~ 1.14.x | NO  | [proxy_connect_1014.patch](patch/proxy_connect_1014.patch) |
-| 1.13.x ~ 1.14.x | YES | [proxy_connect_1014_rewrite.patch](patch/proxy_connect_1014_rewrite.patch) |
+| 1.13.x ~ 1.14.x | YES | [proxy_connect_rewrite_1014.patch](patch/proxy_connect_rewrite_1014.patch) |
 
 `proxy_connect.patch` includes logic in macro NGX_HTTP_RPOXY_CONNECT, and [config](https://github.com/chobits/ngx_http_proxy_connect_module/blob/master/config#L5) script will enable this macro automatically.  
 
