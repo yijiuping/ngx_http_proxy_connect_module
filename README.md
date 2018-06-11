@@ -136,8 +136,6 @@ Install
 | 1.13.x ~ 1.14.x | NO  | [proxy_connect_1014.patch](patch/proxy_connect_1014.patch) |
 | 1.13.x ~ 1.14.x | YES | [proxy_connect_rewrite_1014.patch](patch/proxy_connect_rewrite_1014.patch) |
 
-`proxy_connect.patch` includes logic in macro NGX_HTTP_RPOXY_CONNECT, and [config](https://github.com/chobits/ngx_http_proxy_connect_module/blob/master/config#L5) script will enable this macro automatically.  
-
 This module disables nginx REWRITE phase for CONNECT request by default, which means `if`, `set`, `rewrite_by_lua` and other REWRITE phase directives cannot be used. To enable these, you should use `proxy_connect_rewrite.patch` instead of `proxy_connect.patch`. (`TODO`: merge two patches into one.)
 
 * Install this module from source:
