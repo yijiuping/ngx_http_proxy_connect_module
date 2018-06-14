@@ -149,11 +149,11 @@ $ ./configure --add-module=/path/to/ngx_http_proxy_connect_module
 $ make && make install
 ```
 
-* Install this from OpenResty source:
+* Install this module from OpenResty source:
 
 ```
 $ wget https://openresty.org/download/openresty-1.13.6.2.tar.gz
-$ tar xvf openresty-1.13.6.2.tar.gz
+$ tar -zxvf openresty-1.13.6.2.tar.gz
 $ cd openresty-1.13.6.2
 $ ./configure --add-module=/path/to/ngx_http_proxy_connect_module
 $ patch -d build/nginx-1.13.6/ -p 1 < /path/to/ngx_http_proxy_connect_module/patch/proxy_connect.patch
