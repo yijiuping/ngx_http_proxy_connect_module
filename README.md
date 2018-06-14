@@ -138,7 +138,7 @@ Install
 
 This module disables nginx REWRITE phase for CONNECT request by default, which means `if`, `set`, `rewrite_by_lua` and other REWRITE phase directives cannot be used. To enable these, you should use `proxy_connect_rewrite.patch` instead of `proxy_connect.patch`. (`TODO`: merge two patches into one.)
 
-* Install this module from source:
+* Install this module from Nginx source:
 
 ```
 $ wget http://nginx.org/download/nginx-1.9.2.tar.gz
@@ -149,6 +149,16 @@ $ ./configure --add-module=/path/to/ngx_http_proxy_connect_module
 $ make && make install
 ```
 
+* Install this from OpenResty source:
+
+```
+$ wget https://openresty.org/download/openresty-1.13.6.2.tar.gz
+$ tar xvf openresty-1.13.6.2.tar.gz
+$ cd openresty-1.13.6.2
+$ ./configure --add-module=/path/to/ngx_http_proxy_connect_module
+$ patch -d build/nginx-1.13.6/ -p 1 < /path/to/ngx_http_proxy_connect_module/patch/proxy_connect.patch
+$ make && make install
+```
 
 Directive
 =========
@@ -276,6 +286,13 @@ The latest module is compatible with the following versions of nginx:
 * 1.8.1 (stable version of 1.8.x)
 * 1.6.3 (stable version of 1.6.x)
 * 1.4.7 (stable version of 1.4.x)
+
+OpenResty Compatibility
+=======================
+
+The latest module is compatible with the following versions of OpenResty:
+
+* 1.13.6.2 (nginx version: 1.13.6)
 
 Tengine Compatibility
 =====================
