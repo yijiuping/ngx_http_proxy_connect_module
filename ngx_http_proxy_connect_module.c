@@ -10,7 +10,7 @@
 
 
 #define NGX_HTTP_PROXY_CONNECT_ESTABLISTHED     \
-    "HTTP/1.0 200 Connection Established\r\n"   \
+    "HTTP/1.1 200 Connection Established\r\n"   \
     "Proxy-agent: nginx\r\n\r\n"
 
 
