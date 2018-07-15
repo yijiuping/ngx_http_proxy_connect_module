@@ -99,11 +99,14 @@ The sequence diagram of above example is as following:
     |                             |                          |
 (1) |-- CONNECT github.com:443 -->|                          |
     |                             |                          |
+    |                             |----[ TCP connection ]--->|
+    |                             |                          |
 (2) |<- HTTP/1.1 200           ---|                          |
     |   Connection Established    |                          |
     |                             |                          |
-    ~~  CONNECT tunnel has       ~~                          |
-    ~~  been establesied.        ~~                          |
+    |                                                        |
+    ========= CONNECT tunnel has been establesied. ===========
+    |                                                        |
     |                             |                          |
     |                             |                          |
     |   [ SSL stream       ]      |                          |
