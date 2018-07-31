@@ -33,6 +33,8 @@ if (defined $ENV{TEST_ENABLE_REWRITE_PHASE}) {
     $test_enable_rewrite_phase = 1;
 }
 
+print("+ test_enable_rewrite_phase: $test_enable_rewrite_phase\n");
+
 # --- init DNS server ---
 
 my $bind_pid;
@@ -350,12 +352,12 @@ sub bind_daemon {
 sub start_bind {
     if (defined $bind_server_port) {
 
-        print "DNS server: try to bind server port: $bind_server_port\n";
+        print "+ DNS server: try to bind server port: $bind_server_port\n";
 
         $t->run_daemon(\&bind_daemon);
         $bind_pid = pop @{$t->{_daemons}};
 
-        print "DNS server: daemon pid: $bind_pid\n";
+        print "+ DNS server: daemon pid: $bind_pid\n";
 
         my $s;
         my $i = 1;
@@ -371,7 +373,7 @@ sub start_bind {
         sleep 0.1;
         $s and close($s) || die 'can not connect to DNS server';
 
-        print "DNS server: working\n";
+        print "+ DNS server: working\n";
     }
 }
 
@@ -382,7 +384,7 @@ sub stop_bind {
         wait;
 
         $bind_pid = undef;
-        print ("DNS server: stop\n");
+        print ("+ DNS server: stop\n");
     }
 }
 
