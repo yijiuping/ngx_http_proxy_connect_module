@@ -265,7 +265,7 @@ EOF
         return '' if $extra{aborted};
         my $n = $s->sysread($reply, 65536);
         return unless $n;
-        if ($reply !~ /HTTP\/1\.0 200 Connection Established\r\nProxy-agent: .+\r\n\r\n/) {
+        if ($reply !~ /HTTP\/1\.[01] 200 Connection Established\r\nProxy-agent: .+\r\n\r\n/) {
             return $reply;
         }
         log_out($request);
