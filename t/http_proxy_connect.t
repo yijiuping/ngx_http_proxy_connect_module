@@ -133,6 +133,15 @@ http {
             root %%TESTDIR%%/;
         }
     }
+
+    server {
+        listen       127.0.0.1:8080;
+        server_name  forbidden.example.com;
+
+        # It will forbid CONNECT request without proxy_connect command enabled.
+
+        return 200;
+    }
 }
 
 EOF
@@ -158,6 +167,7 @@ like(http_connect_request('www.no-dns-reply.com', '80', '/'), qr/502/, '200 Conn
 like(http_connect_request('127.0.0.1', '9999', '/'), qr/403/, '200 Connection Established not allowed port');
 like(http_get('/'), qr/backend server/, 'Get method: proxy_pass');
 like(http_get('/hello'), qr/world/, 'Get method: return 200');
+like(http_connect_request('forbidden.example.com', '8080', '/'), qr/400 Bad Request/, 'forbid CONNECT request without proxy_connect command enabled');
 
 if ($test_enable_rewrite_phase) {
     like(http_connect_request('address.com', '8081', '/'), qr/backend server: addr:127.0.0.1 port:8082/, 'set remote address');
