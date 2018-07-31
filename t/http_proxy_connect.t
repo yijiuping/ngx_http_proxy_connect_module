@@ -33,6 +33,8 @@ if (defined $ENV{TEST_ENABLE_REWRITE_PHASE}) {
     $test_enable_rewrite_phase = 1;
 }
 
+print("+ test_enable_rewrite_phase: $test_enable_rewrite_phase\n");
+
 # --- init DNS server ---
 
 my $bind_pid;
@@ -131,6 +133,15 @@ http {
             root %%TESTDIR%%/;
         }
     }
+
+    server {
+        listen       127.0.0.1:8080;
+        server_name  forbidden.example.com;
+
+        # It will forbid CONNECT request without proxy_connect command enabled.
+
+        return 200;
+    }
 }
 
 EOF
@@ -156,6 +167,7 @@ like(http_connect_request('www.no-dns-reply.com', '80', '/'), qr/502/, '200 Conn
 like(http_connect_request('127.0.0.1', '9999', '/'), qr/403/, '200 Connection Established not allowed port');
 like(http_get('/'), qr/backend server/, 'Get method: proxy_pass');
 like(http_get('/hello'), qr/world/, 'Get method: return 200');
+like(http_connect_request('forbidden.example.com', '8080', '/'), qr/400 Bad Request/, 'forbid CONNECT request without proxy_connect command enabled');
 
 if ($test_enable_rewrite_phase) {
     like(http_connect_request('address.com', '8081', '/'), qr/backend server: addr:127.0.0.1 port:8082/, 'set remote address');
@@ -350,12 +362,12 @@ sub bind_daemon {
 sub start_bind {
     if (defined $bind_server_port) {
 
-        print "DNS server: try to bind server port: $bind_server_port\n";
+        print "+ DNS server: try to bind server port: $bind_server_port\n";
 
         $t->run_daemon(\&bind_daemon);
         $bind_pid = pop @{$t->{_daemons}};
 
-        print "DNS server: daemon pid: $bind_pid\n";
+        print "+ DNS server: daemon pid: $bind_pid\n";
 
         my $s;
         my $i = 1;
@@ -371,7 +383,7 @@ sub start_bind {
         sleep 0.1;
         $s and close($s) || die 'can not connect to DNS server';
 
-        print "DNS server: working\n";
+        print "+ DNS server: working\n";
     }
 }
 
@@ -382,7 +394,7 @@ sub stop_bind {
         wait;
 
         $bind_pid = undef;
-        print ("DNS server: stop\n");
+        print ("+ DNS server: stop\n");
     }
 }
 
