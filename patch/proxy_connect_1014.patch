@@ -31,21 +31,6 @@ index 5951571..09f3188 100644
      rc = ngx_http_core_find_location(r);
  
      if (rc == NGX_ERROR) {
-diff --git a/src/http/ngx_http_core_module.h b/src/http/ngx_http_core_module.h
-index a6128b5..c21230b 100644
---- a/src/http/ngx_http_core_module.h
-+++ b/src/http/ngx_http_core_module.h
-@@ -315,6 +315,10 @@ struct ngx_http_core_loc_conf_s {
-     unsigned      gzip_disable_degradation:2;
- #endif
- 
-+#if (NGX_HTTP_PROXY_CONNECT)
-+    unsigned      accept_connect:1;
-+#endif
-+
-     ngx_http_location_tree_node_t   *static_locations;
- #if (NGX_PCRE)
-     ngx_http_core_loc_conf_t       **regex_locations;
 diff --git a/src/http/ngx_http_parse.c b/src/http/ngx_http_parse.c
 index 844054c..1b5adf9 100644
 --- a/src/http/ngx_http_parse.c
@@ -283,28 +268,6 @@ index 5668bf4..430a67f 100644
          if (r->host_start) {
              r->host_start = new + (r->host_start - old);
              if (r->host_end) {
-@@ -1876,6 +1936,21 @@ ngx_http_process_request(ngx_http_request_t *r)
- 
-     c = r->connection;
- 
-+#if (NGX_HTTP_PROXY_CONNECT)
-+
-+    ngx_http_core_loc_conf_t    *clcf;
-+
-+    clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
-+
-+    if (r->method == NGX_HTTP_CONNECT && !clcf->accept_connect) {
-+        ngx_log_error(NGX_LOG_INFO, c->log, 0,
-+                      "client sent connect method");
-+        ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
-+        return;
-+    }
-+
-+#endif
-+
- #if (NGX_HTTP_SSL)
- 
-     if (r->http_connection->ssl) {
 diff --git a/src/http/ngx_http_request.h b/src/http/ngx_http_request.h
 index 421004a..f07d4e7 100644
 --- a/src/http/ngx_http_request.h
