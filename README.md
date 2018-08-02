@@ -138,6 +138,7 @@ Install
 | 1.4.x ~ 1.12.x  | YES | [proxy_connect_rewrite.patch](patch/proxy_connect_rewrite.patch) |
 | 1.13.x ~ 1.14.x | NO  | [proxy_connect_1014.patch](patch/proxy_connect_1014.patch) |
 | 1.13.x ~ 1.14.x | YES | [proxy_connect_rewrite_1014.patch](patch/proxy_connect_rewrite_1014.patch) |
+| 1.15.x | YES | [proxy_connect_rewrite_1015.patch](patch/proxy_connect_rewrite_1015.patch) |
 
 This module disables nginx REWRITE phase for CONNECT request by default, which means `if`, `set`, `rewrite_by_lua` and other REWRITE phase directives cannot be used. To enable these, you should use `proxy_connect_rewrite.patch` instead of `proxy_connect.patch`. (`TODO`: merge two patches into one.)
 
@@ -283,6 +284,7 @@ Nginx Compatibility
 
 The latest module is compatible with the following versions of nginx:
 
+* 1.15.2 (2018/08/02 mainlain version of 1.15.x)
 * 1.14.0 (stable version of 1.14.x)
 * 1.12.1 (stable version of 1.12.x)
 * 1.10.3 (stable version of 1.10.x)
