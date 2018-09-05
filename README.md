@@ -232,7 +232,7 @@ If the proxied server does not receive anything within this time, the connection
 proxy_connect_address
 ---------------------
 
-Syntax: **proxy_connect_address `address [transparent] | off`**  
+Syntax: **proxy_connect_address `address | off`**  
 Default: `none`  
 Context: `server`  
 
@@ -244,7 +244,7 @@ NOTE: If using `set $<nginx variable>` and `proxy_connect_address $<nginx variab
 proxy_connect_bind
 ------------------
 
-Syntax: **proxy_connect_bind `address | off`**  
+Syntax: **proxy_connect_bind `address [transparent] | off`**  
 Default: `none`  
 Context: `server`  
 
@@ -257,6 +257,8 @@ The transparent parameter allows outgoing connections to a proxied server origin
 proxy_connect_bind $remote_addr transparent;
 
 ```
+
+In order for this parameter to work, it is usually necessary to run nginx worker processes with the [superuser](http://nginx.org/en/docs/ngx_core_module.html#user) privileges. On Linux it is not required (1.13.8) as if the transparent parameter is specified, worker processes inherit the CAP_NET_RAW capability from the master process. It is also necessary to configure kernel routing table to intercept network traffic from the proxied server.
 
 NOTE: If using `set $<nginx variable>` and `proxy_connect_bind $<nginx variable>` together, you should use `proxy_connect_rewrite.patch` instead, see [Install](#install) for more details.
 
