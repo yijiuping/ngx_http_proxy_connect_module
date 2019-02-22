@@ -9,6 +9,9 @@ Table of Contents
 
    * [name](#name)
    * [Example](#example)
+      * [configuration example](#configuration-example)
+      * [example for curl](#example-for-curl)
+      * [example for browser](#example-for-browser)
    * [Install](#install)
    * [Directive](#directive)
       * [proxy_connect](#proxy_connect)
@@ -29,6 +32,9 @@ Table of Contents
 
 Example
 =======
+
+Configuration Example
+---------------------
 
 ```
  server {
@@ -51,6 +57,9 @@ Example
      }
  }
 ```
+
+Example for curl
+----------------
 
 With above configuration, you can get any https website via HTTP CONNECT tunnel.
 A simple test with command `curl` is as following:
@@ -123,9 +132,12 @@ The sequence diagram of above example is as following:
     |                             |                          |
 ```
 
-Also you can configure your browser to use this nginx as PROXY server (e.g. Google Chrome HTTP PROXY SETTING).
+Example for browser
+-------------------
 
-Here is another [guide & config](https://github.com/chobits/ngx_http_proxy_connect_module/issues/22#issuecomment-346941271) for how to configure this module working under SSL layer (for supporing Google Chrome HTTPS PROXY SETTING).
+You can configure your browser to use this nginx as PROXY server.
+
+* Google Chrome HTTPS PROXY SETTING: [guide & config](https://github.com/chobits/ngx_http_proxy_connect_module/issues/22#issuecomment-346941271) for how to configure this module working under SSL layer.
 
 Install
 =======
