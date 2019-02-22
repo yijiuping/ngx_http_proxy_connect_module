@@ -9,8 +9,9 @@ Table of Contents
 
    * [name](#name)
    * [Example](#example)
-      * [example for curl](#example_for_curl)
-      * [example for browser](#example_for_browser)
+      * [configuration example](#configuration-example)
+      * [example for curl](#example-for-curl)
+      * [example for browser](#example-for-browser)
    * [Install](#install)
    * [Directive](#directive)
       * [proxy_connect](#proxy_connect)
@@ -32,8 +33,8 @@ Table of Contents
 Example
 =======
 
-Example for curl
-----------------
+Configuration Example
+---------------------
 
 ```
  server {
@@ -56,6 +57,9 @@ Example for curl
      }
  }
 ```
+
+Example for curl
+----------------
 
 With above configuration, you can get any https website via HTTP CONNECT tunnel.
 A simple test with command `curl` is as following:
