@@ -9,6 +9,8 @@ Table of Contents
 
    * [name](#name)
    * [Example](#example)
+      * [example for curl](#example_for_curl)
+      * [example for browser](#example_for_browser)
    * [Install](#install)
    * [Directive](#directive)
       * [proxy_connect](#proxy_connect)
@@ -29,6 +31,9 @@ Table of Contents
 
 Example
 =======
+
+Example for curl
+----------------
 
 ```
  server {
@@ -123,9 +128,12 @@ The sequence diagram of above example is as following:
     |                             |                          |
 ```
 
-Also you can configure your browser to use this nginx as PROXY server (e.g. Google Chrome HTTP PROXY SETTING).
+Example for browser
+-------------------
 
-Here is another [guide & config](https://github.com/chobits/ngx_http_proxy_connect_module/issues/22#issuecomment-346941271) for how to configure this module working under SSL layer (for supporing Google Chrome HTTPS PROXY SETTING).
+You can configure your browser to use this nginx as PROXY server.
+
+* Google Chrome HTTPS PROXY SETTING: [guide & config](https://github.com/chobits/ngx_http_proxy_connect_module/issues/22#issuecomment-346941271) for how to configure this module working under SSL layer.
 
 Install
 =======
