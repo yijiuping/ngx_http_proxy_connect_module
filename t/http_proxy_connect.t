@@ -45,17 +45,17 @@ my %route_map;
 
 # A record
 my %aroute_map = (
-    'www.baidu.com' => [[300, "127.0.0.1"]],
-    'www.taobao.com' => [[300, "127.0.0.1"]],
+    'www.test-a.com' => [[300, "127.0.0.1"]],
+    'www.test-b.com' => [[300, "127.0.0.1"]],
 );
 
 # AAAA record (ipv6)
 my %aaaaroute_map;
 # my %aaaaroute_map = (
-#     'www.baidu.com' => [[300, "[::1]"]],
-#     'www.taobao.com' => [[300, "[::1]"]],
-#     #'www.baidu.com' => [[300, "127.0.0.1"]],
-#     #'www.taobao.com' => [[300, "127.0.0.1"]],
+#     'www.test-a.com' => [[300, "[::1]"]],
+#     'www.test-b.com' => [[300, "[::1]"]],
+#     #'www.test-a.com' => [[300, "127.0.0.1"]],
+#     #'www.test-b.com' => [[300, "127.0.0.1"]],
 # );
 
 start_bind();
@@ -161,8 +161,8 @@ if ($@) {
 }
 
 like(http_connect_request('127.0.0.1', '8081', '/'), qr/backend server/, '200 Connection Established');
-like(http_connect_request('www.baidu.com', '8081', '/'), qr/host:www\.baidu\.com/, '200 Connection Established server name');
-like(http_connect_request('www.taobao.com', '8081', '/'), qr/host:www\.taobao\.com/, '200 Connection Established server name');
+like(http_connect_request('www.test-a.com', '8081', '/'), qr/host:www\.test-a\.com/, '200 Connection Established server name');
+like(http_connect_request('www.test-b.com', '8081', '/'), qr/host:www\.test-b\.com/, '200 Connection Established server name');
 like(http_connect_request('www.no-dns-reply.com', '80', '/'), qr/502/, '200 Connection Established server name');
 like(http_connect_request('127.0.0.1', '9999', '/'), qr/403/, '200 Connection Established not allowed port');
 like(http_get('/'), qr/backend server/, 'Get method: proxy_pass');
