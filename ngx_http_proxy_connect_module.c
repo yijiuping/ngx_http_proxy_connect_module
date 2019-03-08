@@ -77,6 +77,10 @@ typedef struct {
 
     ngx_buf_t                       buf;
 
+    ngx_msec_t                      connect_timeout;
+    ngx_msec_t                      send_timeout;
+    ngx_msec_t                      read_timeout;
+
 } ngx_http_proxy_connect_ctx_t;
 
 
@@ -102,7 +106,10 @@ static ngx_int_t ngx_http_proxy_connect_set_local(ngx_http_request_t *r,
   ngx_http_proxy_connect_upstream_t *u, ngx_http_proxy_connect_address_t *local);
 static ngx_int_t ngx_http_proxy_connect_set_address(ngx_http_request_t *r,
     ngx_http_proxy_connect_upstream_t *u, ngx_http_proxy_connect_address_t *address);
-
+static ngx_int_t ngx_http_proxy_connect_variable_get_time(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data);
+static void ngx_http_proxy_connect_variable_set_time(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data);
 
 
 
@@ -205,6 +212,24 @@ static ngx_http_variable_t  ngx_http_proxy_connect_vars[] = {
     { ngx_string("connect_addr"), NULL,
       ngx_http_proxy_connect_connect_addr_variable,
       0, NGX_HTTP_VAR_NOCACHEABLE, 0 },
+
+    { ngx_string("proxy_connect_connect_timeout"),
+      ngx_http_proxy_connect_variable_set_time,
+      ngx_http_proxy_connect_variable_get_time,
+      offsetof(ngx_http_proxy_connect_ctx_t, connect_timeout),
+      NGX_HTTP_VAR_NOCACHEABLE|NGX_HTTP_VAR_CHANGEABLE, 0 },
+
+    { ngx_string("proxy_connect_read_timeout"),
+      ngx_http_proxy_connect_variable_set_time,
+      ngx_http_proxy_connect_variable_get_time,
+      offsetof(ngx_http_proxy_connect_ctx_t, read_timeout),
+      NGX_HTTP_VAR_NOCACHEABLE|NGX_HTTP_VAR_CHANGEABLE, 0 },
+
+    { ngx_string("proxy_connect_send_timeout"),
+      ngx_http_proxy_connect_variable_set_time,
+      ngx_http_proxy_connect_variable_get_time,
+      offsetof(ngx_http_proxy_connect_ctx_t, send_timeout),
+      NGX_HTTP_VAR_NOCACHEABLE|NGX_HTTP_VAR_CHANGEABLE, 0 },
 
     { ngx_null_string, NULL, NULL, 0, 0, 0 }
 };
@@ -456,6 +481,9 @@ ngx_http_proxy_connect_send_connection_established(ngx_http_request_t *r)
         n = c->send(c, b->pos, b->last - b->pos);
 
         if (n >= 0) {
+
+            r->headers_out.status = 200;    /* fixed that $status is 000 */
+
             b->pos += n;
 
             if (b->pos == b->last) {
@@ -504,7 +532,7 @@ ngx_http_proxy_connect_send_connection_established(ngx_http_request_t *r)
     /* n == NGX_AGAIN */
     r->write_event_handler = ngx_http_proxy_connect_send_handler;
 
-    ngx_add_timer(c->write, clcf->send_timeout);
+    ngx_add_timer(c->write, ctx->send_timeout);
 
     if (ngx_handle_write_event(c->write, clcf->send_lowat) != NGX_OK) {
         ngx_http_proxy_connect_finalize_request(r, u,
@@ -645,7 +673,7 @@ ngx_http_proxy_connect_tunnel(ngx_http_request_t *r,
     }
 
     if (upstream->write->active && !upstream->write->ready) {
-        ngx_add_timer(upstream->write, u->conf->send_timeout);
+        ngx_add_timer(upstream->write, ctx->send_timeout);
 
     } else if (upstream->write->timer_set) {
         ngx_del_timer(upstream->write);
@@ -658,7 +686,7 @@ ngx_http_proxy_connect_tunnel(ngx_http_request_t *r,
 
     if (upstream->read->active && !upstream->read->ready) {
         if (from_upstream) {
-            ngx_add_timer(upstream->read, u->conf->read_timeout);
+            ngx_add_timer(upstream->read, ctx->read_timeout);
         }
 
     } else if (upstream->read->timer_set) {
@@ -907,7 +935,9 @@ ngx_http_proxy_connect_process_connect(ngx_http_request_t *r,
     ngx_connection_t                *c;
     ngx_peer_connection_t           *pc;
     ngx_http_upstream_resolved_t    *ur;
+    ngx_http_proxy_connect_ctx_t    *ctx;
 
+    ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);
 
     r->connection->log->action = "connecting to upstream(proxy_connect)";
 
@@ -978,7 +1008,7 @@ ngx_http_proxy_connect_process_connect(ngx_http_request_t *r,
     c->write->log = c->log;
 
     if (rc == NGX_AGAIN) {
-        ngx_add_timer(c->write, u->conf->connect_timeout);
+        ngx_add_timer(c->write, ctx->connect_timeout);
         return;
     }
 
@@ -1366,17 +1396,7 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
         return NGX_HTTP_FORBIDDEN;
     }
 
-    ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_proxy_connect_ctx_t));
-    if (ctx == NULL) {
-        return NGX_ERROR;
-    }
-
-    ctx->buf.pos = (u_char *) NGX_HTTP_PROXY_CONNECT_ESTABLISTHED;
-    ctx->buf.last = ctx->buf.pos +
-                    sizeof(NGX_HTTP_PROXY_CONNECT_ESTABLISTHED) - 1;
-    ctx->buf.memory = 1;
-
-    ngx_http_set_ctx(r, ctx, ngx_http_proxy_connect_module);
+    ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);;
 
     if (ngx_http_proxy_connect_upstream_create(r, ctx) != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -1958,6 +1978,82 @@ ngx_http_proxy_connect_connect_addr_variable(ngx_http_request_t *r,
 
 
 static ngx_int_t
+ngx_http_proxy_connect_variable_get_time(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data)
+{
+    u_char                          *p;
+    ngx_msec_t                      *msp, ms;
+    ngx_http_proxy_connect_ctx_t    *ctx;
+
+    if (r->method != NGX_HTTP_CONNECT) {
+        return NGX_OK;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);
+
+    if (ctx == NULL) {
+        v->not_found = 1;
+        return NGX_OK;
+    }
+
+    msp = (ngx_msec_t *) ((char *) ctx + data);
+    ms = *msp;
+
+    p = ngx_pnalloc(r->pool, NGX_TIME_T_LEN);
+    if (p == NULL) {
+        return NGX_ERROR;
+    }
+
+    v->len = ngx_sprintf(p, "%M", ms) - p;
+    v->valid = 1;
+    v->no_cacheable = 0;
+    v->not_found = 0;
+    v->data = p;
+
+    return NGX_OK;
+}
+
+
+static void
+ngx_http_proxy_connect_variable_set_time(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data)
+{
+    ngx_str_t                        s;
+    ngx_msec_t                      *msp, ms;
+    ngx_http_proxy_connect_ctx_t    *ctx;
+
+    if (r->method != NGX_HTTP_CONNECT) {
+        return;
+    }
+
+    s.len = v->len;
+    s.data = v->data;
+
+    ms = ngx_parse_time(&s, 0);
+
+    if (ms == (ngx_msec_t) NGX_ERROR) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "[proxy_connect] invalid msec \"%V\" (ctx offset=%ui)", &s, data);
+        return;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);
+
+    if (ctx == NULL) {
+#if 0
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "[proxy_connect] no ctx found");
+#endif
+        return;
+    }
+
+    msp = (ngx_msec_t *) ((char *) ctx + data);
+
+    *msp = ms;
+}
+
+
+static ngx_int_t
 ngx_http_proxy_connect_add_variables(ngx_conf_t *cf)
 {
     ngx_http_variable_t  *var, *v;
@@ -1968,8 +2064,7 @@ ngx_http_proxy_connect_add_variables(ngx_conf_t *cf)
             return NGX_ERROR;
         }
 
-        var->get_handler = v->get_handler;
-        var->data = v->data;
+        *var = *v;
     }
 
     return NGX_OK;
@@ -1979,14 +2074,36 @@ ngx_http_proxy_connect_add_variables(ngx_conf_t *cf)
 static ngx_int_t
 ngx_http_proxy_connect_post_read_handler(ngx_http_request_t *r)
 {
+    ngx_http_proxy_connect_ctx_t      *ctx;
     ngx_http_proxy_connect_loc_conf_t *pclcf;
 
     pclcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_connect_module);
 
-    if (r->method == NGX_HTTP_CONNECT && !pclcf->accept_connect) {
-        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                      "client sent connect method");
-        return NGX_HTTP_BAD_REQUEST;
+    if (r->method == NGX_HTTP_CONNECT) {
+
+        if (!pclcf->accept_connect) {
+            ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+                          "client sent connect method");
+            return NGX_HTTP_BAD_REQUEST;
+        }
+
+        /* init ctx */
+
+        ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_proxy_connect_ctx_t));
+        if (ctx == NULL) {
+            return NGX_ERROR;
+        }
+
+        ctx->buf.pos = (u_char *) NGX_HTTP_PROXY_CONNECT_ESTABLISTHED;
+        ctx->buf.last = ctx->buf.pos +
+                        sizeof(NGX_HTTP_PROXY_CONNECT_ESTABLISTHED) - 1;
+        ctx->buf.memory = 1;
+
+        ctx->connect_timeout = pclcf->connect_timeout;
+        ctx->send_timeout = pclcf->send_timeout;
+        ctx->read_timeout = pclcf->read_timeout;
+
+        ngx_http_set_ctx(r, ctx, ngx_http_proxy_connect_module);
     }
 
     return NGX_DECLINED;
