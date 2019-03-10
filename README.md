@@ -25,6 +25,9 @@ Table of Contents
       * [$connect_host](#connect_host)
       * [$connect_port](#connect_port)
       * [$connect_addr](#connect_addr)
+      * [$proxy_connect_connect_timeout](#proxy_connect_connect_timeout-1)
+      * [$proxy_connect_read_timeout](#proxy_connect_read_timeout-1)
+      * [$proxy_connect_send_timeout](#proxy_connect_send_timeout-1)
    * [Nginx Compatibility](#nginx-compatibility)
    * [Tengine Compatibility](#tengine-compatibility)
    * [Author](#author)
@@ -232,7 +235,7 @@ The timeout is set only between two successive read operations, not for the tran
 If the proxied server does not transmit anything within this time, the connection is closed.
 
 proxy_connect_send_timeout
----------------------------
+--------------------------
 
 Syntax: **proxy_connect_send_timeout `time`**  
 Default: `60s`  
@@ -293,6 +296,39 @@ $connect_addr
 
 IP address and port of the remote host, e.g. "192.168.1.5:12345".
 IP address is resolved from host name of CONNECT request line.
+
+$proxy_connect_connect_timeout
+------------------------------
+
+Get or set timeout of [`proxy_connect_connect_timeout` directive](#proxy_connect_connect_timeout).
+
+For example:
+
+```
+# Set default value
+
+proxy_connect_connect_timeout   10s;
+proxy_connect_read_timeout      10s;
+proxy_connect_send_timeout      10s;
+
+# Overlap default value
+
+if ($host = "test.com") {
+    set $proxy_connect_connect_timeout  "10ms";
+    set $proxy_connect_read_timeout     "10ms";
+    set $proxy_connect_send_timeout     "10ms";
+}
+```
+
+$proxy_connect_read_timeout
+---------------------------
+
+Get or set a timeout of [`proxy_connect_read_timeout` directive](#proxy_connect_read_timeout).
+
+$proxy_connect_send_timeout
+---------------------------
+
+Get or set a timeout of [`proxy_connect_send_timeout` directive](#proxy_connect_send_timeout).
 
 Nginx Compatibility
 ===================
