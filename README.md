@@ -13,6 +13,8 @@ Table of Contents
       * [example for curl](#example-for-curl)
       * [example for browser](#example-for-browser)
    * [Install](#install)
+      * [install for nginx](#install-for-nginx)
+      * [install for openrsty](#install-for-nginx)
    * [Directive](#directive)
       * [proxy_connect](#proxy_connect)
       * [proxy_connect_allow](#proxy_connect_allow)
@@ -176,7 +178,7 @@ $ wget https://openresty.org/download/openresty-1.13.6.2.tar.gz
 $ tar -zxvf openresty-1.13.6.2.tar.gz
 $ cd openresty-1.13.6.2
 $ ./configure --add-module=/path/to/ngx_http_proxy_connect_module
-$ patch -d build/nginx-1.13.6/ -p 1 < /path/to/ngx_http_proxy_connect_module/patch/proxy_connect.patch
+$ patch -d build/nginx-1.13.6/ -p 1 < /path/to/ngx_http_proxy_connect_module/patch/proxy_connect_1014.patch
 $ make && make install
 ```
 

@@ -35,6 +35,8 @@ if (defined $ENV{TEST_ENABLE_REWRITE_PHASE}) {
 
 print("+ test_enable_rewrite_phase: $test_enable_rewrite_phase\n");
 
+plan(skip_all => 'No rewrite phase enabled') if ($test_enable_rewrite_phase == 0);
+
 # --- init DNS server ---
 
 my $bind_pid;
