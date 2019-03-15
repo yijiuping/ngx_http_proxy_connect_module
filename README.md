@@ -1,7 +1,7 @@
 name
 ====
 
-This module provides support for the "CONNECT" HTTP method.  
+This module provides support for [the CONNECT method request](https://tools.ietf.org/html/rfc7231#section-4.3.6).
 This method is mainly used to [tunnel SSL requests](https://en.wikipedia.org/wiki/HTTP_tunnel#HTTP_CONNECT_tunneling) through proxy servers.
 
 Table of Contents
@@ -35,6 +35,8 @@ Table of Contents
       * [Nginx Compatibility](#nginx-compatibility)
       * [OpenResty Compatibility](#openresty-compatibility)
       * [Tengine Compatibility](#tengine-compatibility)
+   * [Known Issues](#known-issues)
+   * [See Also](#see-also)
    * [Author](#author)
    * [License](#license)
 
@@ -380,6 +382,18 @@ Tengine Compatibility
 ---------------------
 
 This module will be merged into tengine soon, see [this pull request](https://github.com/alibaba/tengine/pull/335/).
+
+Known Issues
+============
+
+* In HTTP/2, the CONNECT method is not supported. It only supports the CONNECT method request in HTTP/1.x and HTTPS.
+
+See Also
+========
+
+* [HTTP tunnel - Wikipedia](https://en.wikipedia.org/wiki/HTTP_tunnel)
+* [CONNECT method in HTTP/1.1](https://tools.ietf.org/html/rfc7231#section-4.3.6)
+* [CONNECT method in HTTP/2](https://httpwg.org/specs/rfc7540.html#CONNECT)
 
 Author
 ======
