@@ -236,6 +236,41 @@ if ($test_enable_rewrite_phase) {
 }
 $t->stop();
 
+###############################################################################
+
+$t->write_file_expand('nginx.conf', <<'EOF');
+
+%%TEST_GLOBALS%%
+
+daemon         off;
+
+events {
+}
+
+http {
+    %%TEST_GLOBALS_HTTP%%
+
+    access_log off;
+
+    server {
+        listen       127.0.0.1:8080;
+        proxy_connect;
+        proxy_connect_allow all;
+    }
+}
+
+EOF
+
+
+$t->run();
+
+$t->write_file('test.html', 'test page');
+
+like(http_get('/test.html'), qr/test page/, '200 for default root directive without location {}');
+like(http_get('/404'), qr/ 404 Not Found/, '404 for default root directive without location {}');
+
+$t->stop();
+
 
 # --- stop DNS server ---
 
