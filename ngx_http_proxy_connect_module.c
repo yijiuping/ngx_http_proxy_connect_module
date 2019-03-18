@@ -98,6 +98,8 @@ static char *ngx_http_proxy_connect_merge_loc_conf(ngx_conf_t *cf, void *parent,
 static void ngx_http_proxy_connect_write_downstream(ngx_http_request_t *r);
 static void ngx_http_proxy_connect_read_downstream(ngx_http_request_t *r);
 static void ngx_http_proxy_connect_send_handler(ngx_http_request_t *r);
+static ngx_int_t ngx_http_proxy_connect_allow_handler(ngx_http_request_t *r,
+    ngx_http_proxy_connect_loc_conf_t *plcf);
 static char* ngx_http_proxy_connect_address(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char* ngx_http_proxy_connect_bind(ngx_conf_t *cf, ngx_command_t *cmd,
@@ -1352,10 +1354,8 @@ ngx_http_proxy_connect_wr_check_broken_connection(ngx_http_request_t *r)
 static ngx_int_t
 ngx_http_proxy_connect_handler(ngx_http_request_t *r)
 {
-    in_port_t                          (*ports)[2];
     ngx_url_t                            url;
     ngx_int_t                            rc;
-    ngx_uint_t                           i, allow;
     ngx_resolver_ctx_t                  *rctx, temp;
     ngx_http_core_loc_conf_t            *clcf;
     ngx_http_proxy_connect_ctx_t        *ctx;
@@ -1368,36 +1368,10 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
         return NGX_DECLINED;
     }
 
-    allow = 0;
+    rc = ngx_http_proxy_connect_allow_handler(r, plcf);
 
-    if (plcf->allow_port_all) {
-        allow = 1;
-
-    } else if (plcf->allow_ports) {
-        ports = plcf->allow_ports->elts;
-
-        for (i = 0; i < plcf->allow_ports->nelts; i++) {
-            /*
-             * connect_port == port
-             * OR
-             * port <= connect_port <= eport
-             */
-            if ((ports[i][1] == 0 && r->connect_port_n == ports[i][0])
-                || (ports[i][0] <= r->connect_port_n && r->connect_port_n <= ports[i][1]))
-            {
-                allow = 1;
-                break;
-            }
-        }
-
-    } else {
-        if (r->connect_port_n == 443 || r->connect_port_n == 563) {
-            allow = 1;
-        }
-    }
-
-    if (allow == 0) {
-        return NGX_HTTP_FORBIDDEN;
+    if (rc != NGX_OK) {
+        return rc;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);;
@@ -1515,6 +1489,49 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
     }
 
     return NGX_DONE;
+}
+
+
+static ngx_int_t
+ngx_http_proxy_connect_allow_handler(ngx_http_request_t *r,
+    ngx_http_proxy_connect_loc_conf_t *plcf)
+{
+    ngx_uint_t  i, allow;
+    in_port_t   (*ports)[2];
+
+    allow = 0;
+
+    if (plcf->allow_port_all) {
+        allow = 1;
+
+    } else if (plcf->allow_ports) {
+        ports = plcf->allow_ports->elts;
+
+        for (i = 0; i < plcf->allow_ports->nelts; i++) {
+            /*
+             * connect_port == port
+             * OR
+             * port <= connect_port <= eport
+             */
+            if ((ports[i][1] == 0 && r->connect_port_n == ports[i][0])
+                || (ports[i][0] <= r->connect_port_n && r->connect_port_n <= ports[i][1]))
+            {
+                allow = 1;
+                break;
+            }
+        }
+
+    } else {
+        if (r->connect_port_n == 443 || r->connect_port_n == 563) {
+            allow = 1;
+        }
+    }
+
+    if (allow == 0) {
+        return NGX_HTTP_FORBIDDEN;
+    }
+
+    return NGX_OK;
 }
 
 
