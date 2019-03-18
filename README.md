@@ -381,7 +381,8 @@ The latest module is compatible with the following versions of OpenResty:
 Tengine Compatibility
 ---------------------
 
-This module will be merged into tengine soon, see [this pull request](https://github.com/alibaba/tengine/pull/335/).
+This module has been integrated into Tengine 2.3.0.  
+See [merged pull request for Tengine 2.3.0](https://github.com/alibaba/tengine/pull/1210).
 
 Known Issues
 ============
