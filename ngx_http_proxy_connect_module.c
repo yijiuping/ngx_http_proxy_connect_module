@@ -389,7 +389,7 @@ ngx_http_proxy_connect_test_connect(ngx_connection_t *c)
         }
 
         if (err) {
-            c->log->action = "connecting to upstream(proxy_connect)";
+            c->log->action = "connecting to upstream (proxy_connect)";
             (void) ngx_connection_error(c, err, "connect() failed");
             return NGX_ERROR;
         }
@@ -832,7 +832,7 @@ ngx_http_proxy_connect_write_upstream(ngx_http_request_t *r,
 
     if (c->write->timedout) {
         ngx_connection_error(c, NGX_ETIMEDOUT,
-                             "upstream timed out(proxy_connect)");
+                             "upstream timed out (proxy_connect)");
         ngx_http_proxy_connect_finalize_request(r, u,
                                                 NGX_HTTP_GATEWAY_TIME_OUT);
         return;
@@ -885,7 +885,7 @@ ngx_http_proxy_connect_send_handler(ngx_http_request_t *r)
     if (c->write->timedout) {
         c->timedout = 1;
         ngx_connection_error(c, NGX_ETIMEDOUT,
-                             "client timed out(proxy_connect)");
+                             "client timed out (proxy_connect)");
         ngx_http_proxy_connect_finalize_request(r, ctx->u,
                                                 NGX_HTTP_REQUEST_TIME_OUT);
         return;
@@ -941,7 +941,7 @@ ngx_http_proxy_connect_process_connect(ngx_http_request_t *r,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);
 
-    r->connection->log->action = "connecting to upstream(proxy_connect)";
+    r->connection->log->action = "connecting to upstream (proxy_connect)";
 
     if (ngx_http_proxy_connect_set_local(r, u, u->conf->local) != NGX_OK) {
         ngx_http_proxy_connect_finalize_request(r, u, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -1427,7 +1427,7 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
         return NGX_DONE;
     }
 
-    /* rc = NGX_DECLINED*/
+    /* rc = NGX_DECLINED */
 
     if (url.addrs && url.addrs[0].sockaddr) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
