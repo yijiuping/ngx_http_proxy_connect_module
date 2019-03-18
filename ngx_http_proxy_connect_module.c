@@ -1364,6 +1364,10 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
 
     plcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_connect_module);
 
+    if (r->method != NGX_HTTP_CONNECT || !plcf->accept_connect) {
+        return NGX_DECLINED;
+    }
+
     allow = 0;
 
     if (plcf->allow_port_all) {
@@ -2077,9 +2081,9 @@ ngx_http_proxy_connect_post_read_handler(ngx_http_request_t *r)
     ngx_http_proxy_connect_ctx_t      *ctx;
     ngx_http_proxy_connect_loc_conf_t *pclcf;
 
-    pclcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_connect_module);
-
     if (r->method == NGX_HTTP_CONNECT) {
+
+        pclcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_connect_module);
 
         if (!pclcf->accept_connect) {
             ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
