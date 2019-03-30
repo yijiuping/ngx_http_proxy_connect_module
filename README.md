@@ -382,7 +382,9 @@ Tengine Compatibility
 ---------------------
 
 This module has been integrated into Tengine 2.3.0.  
-See [merged pull request for Tengine 2.3.0](https://github.com/alibaba/tengine/pull/1210).
+
+* [Tengine ngx_http_proxy_connect_module documentation](http://tengine.taobao.org/document/proxy_connect.html)
+* [Merged pull request for Tengine 2.3.0](https://github.com/alibaba/tengine/pull/1210).
 
 Known Issues
 ============
