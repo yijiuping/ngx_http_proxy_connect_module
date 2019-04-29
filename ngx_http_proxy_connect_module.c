@@ -35,7 +35,7 @@ typedef struct {
     size_t                               send_lowat;
     size_t                               buffer_size;
 
-    ngx_http_proxy_connect_address_t    *address;
+    ngx_http_complex_value_t            *address;
     ngx_http_proxy_connect_address_t    *local;
 } ngx_http_proxy_connect_loc_conf_t;
 
@@ -100,18 +100,16 @@ static void ngx_http_proxy_connect_read_downstream(ngx_http_request_t *r);
 static void ngx_http_proxy_connect_send_handler(ngx_http_request_t *r);
 static ngx_int_t ngx_http_proxy_connect_allow_handler(ngx_http_request_t *r,
     ngx_http_proxy_connect_loc_conf_t *plcf);
-static char* ngx_http_proxy_connect_address(ngx_conf_t *cf, ngx_command_t *cmd,
-    void *conf);
 static char* ngx_http_proxy_connect_bind(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static ngx_int_t ngx_http_proxy_connect_set_local(ngx_http_request_t *r,
   ngx_http_proxy_connect_upstream_t *u, ngx_http_proxy_connect_address_t *local);
-static ngx_int_t ngx_http_proxy_connect_set_address(ngx_http_request_t *r,
-    ngx_http_proxy_connect_upstream_t *u, ngx_http_proxy_connect_address_t *address);
 static ngx_int_t ngx_http_proxy_connect_variable_get_time(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 static void ngx_http_proxy_connect_variable_set_time(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
+static ngx_int_t ngx_http_proxy_connect_sock_ntop(ngx_http_request_t *r,
+    ngx_http_proxy_connect_upstream_t *u);
 
 
 
@@ -161,7 +159,7 @@ static ngx_command_t  ngx_http_proxy_connect_commands[] = {
 
     { ngx_string("proxy_connect_address"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
-      ngx_http_proxy_connect_address,
+      ngx_http_set_complex_value_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_proxy_connect_loc_conf_t, address),
       NULL },
@@ -1386,10 +1384,26 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
 
     ngx_memzero(&url, sizeof(ngx_url_t));
 
-    url.url.len = r->connect_host.len;
-    url.url.data = r->connect_host.data;
+    if (plcf->address) {
+        if (ngx_http_complex_value(r, plcf->address, &url.url) != NGX_OK) {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        if (url.url.len == 0 || url.url.data == NULL) {
+            url.url.len = r->connect_host.len;
+            url.url.data = r->connect_host.data;
+        }
+
+    } else {
+        url.url.len = r->connect_host.len;
+        url.url.data = r->connect_host.data;
+    }
+
     url.default_port = r->connect_port_n;
     url.no_resolve = 1;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "connect handler: parse url: %V" , &url);
 
     if (ngx_parse_url(r->pool, &url) != NGX_OK) {
         if (url.err) {
@@ -1404,46 +1418,42 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
     r->read_event_handler = ngx_http_proxy_connect_rd_check_broken_connection;
     r->write_event_handler = ngx_http_proxy_connect_wr_check_broken_connection;
 
+    /* NOTE:
+     *   We use only one address in u->resolved,
+     *   and u->resolved.host is "<address:port>" format.
+     */
+
     u->resolved = ngx_pcalloc(r->pool, sizeof(ngx_http_upstream_resolved_t));
     if (u->resolved == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    rc = ngx_http_proxy_connect_set_address(r, u, plcf->address);
-
-    if (rc == NGX_ERROR) {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
-    }
-
-    if (rc == NGX_OK) {
-
-        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "connect network address given by proxy_connect_address");
-
-        r->main->count++;
-
-        ngx_http_proxy_connect_process_connect(r, u);
-
-        return NGX_DONE;
-    }
-
     /* rc = NGX_DECLINED */
 
-    if (url.addrs && url.addrs[0].sockaddr) {
+    if (url.addrs) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "connect network address given directly");
 
         u->resolved->sockaddr = url.addrs[0].sockaddr;
         u->resolved->socklen = url.addrs[0].socklen;
+#if defined(nginx_version) && nginx_version >= 1011007
+        u->resolved->name = url.addrs[0].name;
+#endif
         u->resolved->naddrs = 1;
-        u->resolved->host = url.addrs[0].name;
-
-    } else {
-        u->resolved->host = r->connect_host;
-        u->resolved->port = (in_port_t) r->connect_port_n;
     }
 
+    u->resolved->host = url.host;
+    u->resolved->port = (in_port_t) (url.no_port ? r->connect_port_n : url.port);
+    u->resolved->no_port = url.no_port;
+
     if (u->resolved->sockaddr) {
+
+        rc = ngx_http_proxy_connect_sock_ntop(r, u);
+
+        if (rc != NGX_OK) {
+            return rc;
+        }
+
         r->main->count++;
 
         ngx_http_proxy_connect_process_connect(r, u);
@@ -1451,8 +1461,10 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
         return NGX_DONE;
     }
 
-    temp.name = r->connect_host;
+    ngx_str_t *host = &url.host;
+
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
+    temp.name = *host;
 
     rctx = ngx_resolve_start(clcf->resolver, &temp);
     if (rctx == NULL) {
@@ -1467,7 +1479,7 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
         return NGX_HTTP_BAD_GATEWAY;
     }
 
-    rctx->name = r->connect_host;
+    rctx->name = *host;
 #if !defined(nginx_version) || nginx_version < 1005008
     rctx->type = NGX_RESOLVE_A;
 #endif
@@ -1489,6 +1501,45 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
     }
 
     return NGX_DONE;
+}
+
+
+static ngx_int_t
+ngx_http_proxy_connect_sock_ntop(ngx_http_request_t *r,
+    ngx_http_proxy_connect_upstream_t *u)
+{
+    u_char                          *p;
+    ngx_int_t                        len;
+    ngx_http_upstream_resolved_t    *ur;
+
+    ur = u->resolved;
+
+    /* fix u->resolved->host to "<address:port>" format */
+
+#if defined(nginx_version) && nginx_version >= 1005008
+    p = ngx_pnalloc(r->pool, NGX_SOCKADDR_STRLEN);
+    if (p == NULL) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    len = ngx_sock_ntop(ur->sockaddr, ur->socklen, p, NGX_SOCKADDR_STRLEN, 1);
+#else
+    /* for nginx older than 1.5.8 */
+
+    len = NGX_INET_ADDRSTRLEN + sizeof(":65536") - 1;
+
+    p = ngx_pnalloc(r->pool, len + sizeof(struct sockaddr_in));
+    if (p == NULL) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    len = ngx_inet_ntop(AF_INET, ur->sockaddr, p, NGX_INET_ADDRSTRLEN);
+    len = ngx_sprintf(&p[len], ":%d", ur->port) - p;
+#endif
+    u->resolved->host.data = p;
+    u->resolved->host.len = len;
+
+    return NGX_OK;
 }
 
 
@@ -1618,84 +1669,6 @@ ngx_http_proxy_connect(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     pclcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_proxy_connect_module);
     pclcf->accept_connect = 1;
-
-    return NGX_CONF_OK;
-}
-
-
-char *
-ngx_http_proxy_connect_address(ngx_conf_t *cf, ngx_command_t *cmd,
-    void *conf)
-{
-    char  *p = conf;
-
-    ngx_int_t                           rc;
-    ngx_str_t                          *value;
-    ngx_http_complex_value_t            cv;
-    ngx_http_proxy_connect_address_t  **paddress, *address;
-    ngx_http_compile_complex_value_t    ccv;
-
-    paddress = (ngx_http_proxy_connect_address_t **) (p + cmd->offset);
-
-    if (*paddress != NGX_CONF_UNSET_PTR) {
-        return "is duplicate";
-    }
-
-    value = cf->args->elts;
-
-    if (ngx_strcmp(value[1].data, "off") == 0) {
-        *paddress = NULL;
-        return NGX_CONF_OK;
-    }
-
-    ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
-
-    ccv.cf = cf;
-    ccv.value = &value[1];
-    ccv.complex_value = &cv;
-
-    if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
-        return NGX_CONF_ERROR;
-    }
-
-    address = ngx_pcalloc(cf->pool, sizeof(ngx_http_proxy_connect_address_t));
-    if (address == NULL) {
-        return NGX_CONF_ERROR;
-    }
-
-    *paddress = address;
-
-    if (cv.lengths) {
-        address->value = ngx_palloc(cf->pool, sizeof(ngx_http_complex_value_t));
-        if (address->value == NULL) {
-            return NGX_CONF_ERROR;
-        }
-
-        *address->value = cv;
-
-    } else {
-        address->addr = ngx_palloc(cf->pool, sizeof(ngx_addr_t));
-        if (address->addr == NULL) {
-            return NGX_CONF_ERROR;
-        }
-
-        rc = __ngx_parse_addr_port(cf->pool, address->addr, value[1].data,
-                                   value[1].len);
-
-        switch (rc) {
-        case NGX_OK:
-            address->addr->name = value[1];
-            break;
-
-        case NGX_DECLINED:
-            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                               "invalid address \"%V\"", &value[1]);
-            /* fall through */
-
-        default:
-            return NGX_CONF_ERROR;
-        }
-    }
 
     return NGX_CONF_OK;
 }
@@ -1848,68 +1821,6 @@ ngx_http_proxy_connect_set_local(ngx_http_request_t *r,
 }
 
 
-static ngx_int_t
-ngx_http_proxy_connect_set_address(ngx_http_request_t *r,
-    ngx_http_proxy_connect_upstream_t *u, ngx_http_proxy_connect_address_t *address)
-{
-    ngx_int_t    rc;
-    ngx_str_t    val;
-    ngx_addr_t  *addr;
-
-    if (address == NULL) {
-        return NGX_DECLINED;
-    }
-
-    if (address->value == NULL) {
-
-        u->resolved->naddrs = 1;
-        u->resolved->addrs = NULL;
-        u->resolved->sockaddr = address->addr->sockaddr;
-        u->resolved->socklen = address->addr->socklen;
-#if defined(nginx_version) && nginx_version >= 1011007
-        u->resolved->name = address->addr->name;
-#endif
-        u->resolved->host = address->addr->name;
-
-        return NGX_OK;
-    }
-
-    if (ngx_http_complex_value(r, address->value, &val) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    if (val.len == 0) {
-        return NGX_DECLINED;
-    }
-
-    addr = ngx_palloc(r->pool, sizeof(ngx_addr_t));
-    if (addr == NULL) {
-        return NGX_ERROR;
-    }
-
-    rc = __ngx_parse_addr_port(r->pool, addr, val.data, val.len);
-    if (rc == NGX_ERROR) {
-        return NGX_ERROR;
-    }
-
-    if (rc != NGX_OK) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "invalid proxy connect address \"%V\"", &val);
-        return NGX_DECLINED;
-    }
-
-    addr->name = val;
-    u->resolved->sockaddr = addr->sockaddr;
-    u->resolved->socklen = addr->socklen;
-#if defined(nginx_version) && nginx_version >= 1011007
-    u->resolved->name = addr->name;
-#endif
-    u->resolved->naddrs = 1;
-
-    return NGX_OK;
-}
-
-
 static void *
 ngx_http_proxy_connect_create_loc_conf(ngx_conf_t *cf)
 {
@@ -1919,6 +1830,12 @@ ngx_http_proxy_connect_create_loc_conf(ngx_conf_t *cf)
     if (conf == NULL) {
         return NULL;
     }
+
+    /*
+     * set by ngx_pcalloc():
+     *
+     *     conf->address = NULL;
+     */
 
     conf->accept_connect = NGX_CONF_UNSET;
     conf->allow_port_all = NGX_CONF_UNSET;
@@ -1931,7 +1848,6 @@ ngx_http_proxy_connect_create_loc_conf(ngx_conf_t *cf)
     conf->send_lowat = NGX_CONF_UNSET_SIZE;
     conf->buffer_size = NGX_CONF_UNSET_SIZE;
 
-    conf->address = NGX_CONF_UNSET_PTR;
     conf->local = NGX_CONF_UNSET_PTR;
 
     return conf;
@@ -1959,7 +1875,10 @@ ngx_http_proxy_connect_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_size_value(conf->buffer_size, prev->buffer_size, 16384);
 
-    ngx_conf_merge_ptr_value(conf->address, prev->address, NULL);
+    if (conf->address == NULL) {
+        conf->address = prev->address;
+    }
+
     ngx_conf_merge_ptr_value(conf->local, prev->local, NULL);
 
     return NGX_CONF_OK;
