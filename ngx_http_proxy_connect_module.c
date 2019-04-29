@@ -1032,6 +1032,10 @@ ngx_http_proxy_connect_resolve_handler(ngx_resolver_ctx_t *ctx)
     ngx_http_upstream_resolved_t                *ur;
     ngx_http_proxy_connect_upstream_t           *u;
 
+#if defined(nginx_version) && nginx_version >= 1013002
+    ngx_uint_t run_posted = ctx->async;
+#endif
+
     u = ctx->data;
     r = u->request;
     ur = u->resolved;
@@ -1098,7 +1102,13 @@ ngx_http_proxy_connect_resolve_handler(ngx_resolver_ctx_t *ctx)
 
 failed:
 
+#if defined(nginx_version) && nginx_version >= 1013002
+    if (run_posted) {
+        ngx_http_run_posted_requests(c);
+    }
+#else
     ngx_http_run_posted_requests(c);
+#endif
 }
 
 
