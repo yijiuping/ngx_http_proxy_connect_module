@@ -110,6 +110,8 @@ static void ngx_http_proxy_connect_variable_set_time(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_http_proxy_connect_sock_ntop(ngx_http_request_t *r,
     ngx_http_proxy_connect_upstream_t *u);
+static ngx_int_t ngx_http_proxy_connect_create_peer(ngx_http_request_t *r,
+    ngx_http_upstream_resolved_t *ur);
 
 
 
@@ -236,6 +238,12 @@ static ngx_http_variable_t  ngx_http_proxy_connect_vars[] = {
 
 
 #if 1
+
+#if defined(nginx_version) && nginx_version >= 1005008
+#define __ngx_sock_ntop ngx_sock_ntop
+#else
+#define __ngx_sock_ntop(sa, slen, p, len, port) ngx_sock_ntop(sa, p, len, port)
+#endif
 
 /*
  * #if defined(nginx_version) && nginx_version <= 1009015
@@ -1019,15 +1027,7 @@ ngx_http_proxy_connect_process_connect(ngx_http_request_t *r,
 static void
 ngx_http_proxy_connect_resolve_handler(ngx_resolver_ctx_t *ctx)
 {
-    u_char                                      *p;
-    ngx_int_t                                    i, len;
     ngx_connection_t                            *c;
-#if defined(nginx_version) && nginx_version >= 1005008
-    socklen_t                                    socklen;
-    struct sockaddr                             *sockaddr;
-#else
-    struct sockaddr_in                          *sin;
-#endif
     ngx_http_request_t                          *r;
     ngx_http_upstream_resolved_t                *ur;
     ngx_http_proxy_connect_upstream_t           *u;
@@ -1056,14 +1056,10 @@ ngx_http_proxy_connect_resolve_handler(ngx_resolver_ctx_t *ctx)
 #if (NGX_DEBUG)
     {
 #   if defined(nginx_version) && nginx_version >= 1005008
-    u_char      text[NGX_SOCKADDR_STRLEN];
-    ngx_str_t   addr;
-#   else
-    in_addr_t   addr;
-#   endif
     ngx_uint_t  i;
+    ngx_str_t   addr;
+    u_char      text[NGX_SOCKADDR_STRLEN];
 
-#   if defined(nginx_version) && nginx_version >= 1005008
     addr.data = text;
 
     for (i = 0; i < ctx->naddrs; i++) {
@@ -1074,6 +1070,9 @@ ngx_http_proxy_connect_resolve_handler(ngx_resolver_ctx_t *ctx)
                        "name was resolved to %V", &addr);
     }
 #   else
+    ngx_uint_t  i;
+    in_addr_t   addr;
+
     for (i = 0; i < ctx->naddrs; i++) {
         addr = ntohl(ctx->addrs[i]);
 
@@ -1086,30 +1085,41 @@ ngx_http_proxy_connect_resolve_handler(ngx_resolver_ctx_t *ctx)
     }
 #endif
 
-    if (ur->naddrs == 0) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "%V could not be resolved", &ctx->name);
-
-        ngx_http_proxy_connect_finalize_request(r, u, NGX_HTTP_BAD_GATEWAY);
+    if (ngx_http_proxy_connect_create_peer(r, ur) != NGX_OK) {
+        ngx_http_proxy_connect_finalize_request(r, u,
+                                                NGX_HTTP_INTERNAL_SERVER_ERROR);
         goto failed;
     }
 
-    if (ur->naddrs == 1) {
-        i = 0;
+    ngx_resolve_name_done(ctx);
+    ur->ctx = NULL;
 
-    } else {
-        i = ngx_random() % ur->naddrs;
-    }
+    ngx_http_proxy_connect_process_connect(r, u);
+
+failed:
+
+    ngx_http_run_posted_requests(c);
+}
+
+
+static ngx_int_t
+ngx_http_proxy_connect_create_peer(ngx_http_request_t *r,
+    ngx_http_upstream_resolved_t *ur)
+{
+    u_char                                      *p;
+    ngx_int_t                                    i, len;
+    socklen_t                                    socklen;
+    struct sockaddr                             *sockaddr;
+
+    i = ngx_random() % ur->naddrs;  /* i<-0 for ur->naddrs == 1 */
 
 #if defined(nginx_version) && nginx_version >= 1005008
+
     socklen = ur->addrs[i].socklen;
 
     sockaddr = ngx_palloc(r->pool, socklen);
     if (sockaddr == NULL) {
-        ngx_http_proxy_connect_finalize_request(r, u,
-                                                NGX_HTTP_INTERNAL_SERVER_ERROR);
-
-        return;
+        return NGX_ERROR;
     }
 
     ngx_memcpy(sockaddr, ur->addrs[i].sockaddr, socklen);
@@ -1124,57 +1134,37 @@ ngx_http_proxy_connect_resolve_handler(ngx_resolver_ctx_t *ctx)
         ((struct sockaddr_in *) sockaddr)->sin_port = htons(ur->port);
     }
 
-    p = ngx_pnalloc(r->pool, NGX_SOCKADDR_STRLEN);
-    if (p == NULL) {
-        ngx_http_proxy_connect_finalize_request(r, u,
-                                                NGX_HTTP_INTERNAL_SERVER_ERROR);
-
-        return;
-    }
-
-    len = ngx_sock_ntop(sockaddr, socklen, p, NGX_SOCKADDR_STRLEN, 1);
-    ur->sockaddr = sockaddr;
-    ur->socklen = socklen;
-
 #else
     /* for nginx older than 1.5.8 */
 
-    len = NGX_INET_ADDRSTRLEN + sizeof(":65536") - 1;
+    socklen = sizeof(struct sockaddr_in);
 
-    p = ngx_pnalloc(r->pool, len + sizeof(struct sockaddr_in));
-    if (p == NULL) {
-        ngx_http_proxy_connect_finalize_request(r, u,
-                                                NGX_HTTP_INTERNAL_SERVER_ERROR);
-
-        return;
+    sockaddr = ngx_pcalloc(r->pool, socklen);
+    if (sockaddr == NULL) {
+        return NGX_ERROR;
     }
 
-    sin = (struct sockaddr_in *) &p[len];
-    ngx_memzero(sin, sizeof(struct sockaddr_in));
+    ((struct sockaddr_in *) sockaddr)->sin_family = AF_INET;
+    ((struct sockaddr_in *) sockaddr)->sin_addr.s_addr = ur->addrs[i];
+    ((struct sockaddr_in *) sockaddr)->sin_port = htons(ur->port);
 
-    len = ngx_inet_ntop(AF_INET, &ur->addrs[i], p, NGX_INET_ADDRSTRLEN);
-    len = ngx_sprintf(&p[len], ":%d", ur->port) - p;
-
-    sin->sin_family = AF_INET;
-    sin->sin_port = htons(ur->port);
-    sin->sin_addr.s_addr = ur->addrs[i];
-
-    ur->sockaddr = (struct sockaddr *) sin;
-    ur->socklen = sizeof(struct sockaddr_in);
 #endif
+
+    p = ngx_pnalloc(r->pool, NGX_SOCKADDR_STRLEN);
+    if (p == NULL) {
+        return NGX_ERROR;
+    }
+
+    len = __ngx_sock_ntop(sockaddr, socklen, p, NGX_SOCKADDR_STRLEN, 1);
+
+    ur->sockaddr = sockaddr;
+    ur->socklen = socklen;
 
     ur->host.data = p;
     ur->host.len = len;
     ur->naddrs = 1;
 
-    ngx_resolve_name_done(ctx);
-    ur->ctx = NULL;
-
-    ngx_http_proxy_connect_process_connect(r, u);
-
-failed:
-
-    ngx_http_run_posted_requests(c);
+    return NGX_OK;
 }
 
 
@@ -1516,26 +1506,13 @@ ngx_http_proxy_connect_sock_ntop(ngx_http_request_t *r,
 
     /* fix u->resolved->host to "<address:port>" format */
 
-#if defined(nginx_version) && nginx_version >= 1005008
     p = ngx_pnalloc(r->pool, NGX_SOCKADDR_STRLEN);
     if (p == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    len = ngx_sock_ntop(ur->sockaddr, ur->socklen, p, NGX_SOCKADDR_STRLEN, 1);
-#else
-    /* for nginx older than 1.5.8 */
+    len = __ngx_sock_ntop(ur->sockaddr, ur->socklen, p, NGX_SOCKADDR_STRLEN, 1);
 
-    len = NGX_INET_ADDRSTRLEN + sizeof(":65536") - 1;
-
-    p = ngx_pnalloc(r->pool, len + sizeof(struct sockaddr_in));
-    if (p == NULL) {
-        return NGX_HTTP_INTERNAL_SERVER_ERROR;
-    }
-
-    len = ngx_inet_ntop(AF_INET, ur->sockaddr, p, NGX_INET_ADDRSTRLEN);
-    len = ngx_sprintf(&p[len], ":%d", ur->port) - p;
-#endif
     u->resolved->host.data = p;
     u->resolved->host.len = len;
 
