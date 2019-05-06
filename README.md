@@ -46,7 +46,7 @@ Example
 Configuration Example
 ---------------------
 
-```
+```nginx
  server {
      listen                         3128;
 
@@ -180,7 +180,7 @@ Build nginx
 
 * Build nginx with this module from source:
 
-```
+```bash
 $ wget http://nginx.org/download/nginx-1.9.2.tar.gz
 $ tar -xzvf nginx-1.9.2.tar.gz
 $ cd nginx-1.9.2/
@@ -194,7 +194,7 @@ Build OpenResty
 
 * Build OpenResty with this module from source:
 
-```
+```bash
 $ wget https://openresty.org/download/openresty-1.13.6.2.tar.gz
 $ tar -zxvf openresty-1.13.6.2.tar.gz
 $ cd openresty-1.13.6.2
@@ -327,7 +327,7 @@ Get or set timeout of [`proxy_connect_connect_timeout` directive](#proxy_connect
 
 For example:
 
-```
+```nginx
 # Set default value
 
 proxy_connect_connect_timeout   10s;
