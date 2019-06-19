@@ -15,6 +15,7 @@ Table of Contents
    * [Install](#install)
       * [select patch](#select-patch)
       * [build nginx](#build-nginx)
+         * [build as a dynamic module](#build-as-a-dynamic-module)
       * [build OpenResty](#build-openresty)
    * [Directive](#directive)
       * [proxy_connect](#proxy_connect)
@@ -188,6 +189,29 @@ $ patch -p1 < /path/to/ngx_http_proxy_connect_module/patch/proxy_connect.patch
 $ ./configure --add-module=/path/to/ngx_http_proxy_connect_module
 $ make && make install
 ```
+
+Build as a dynamic module
+-------------------------
+
+* Starting from nginx 1.9.11, you can also compile this module as a dynamic module, by using the `--add-dynamic-module=PATH` option instead of `--add-module=PATH` on the `./configure` command line.
+
+```bash
+$ $ wget http://nginx.org/download/nginx-1.9.12.tar.gz
+$ tar -xzvf nginx-1.9.12.tar.gz
+$ cd nginx-1.9.12/
+$ patch -p1 < /path/to/ngx_http_proxy_connect_module/patch/proxy_connect.patch
+$ ./configure --add-dynamic-module=/path/to/ngx_http_proxy_connect_module
+$ make && make install
+```
+
+* And then you can explicitly load the module in your nginx.conf via the `load_module` directive, for example,
+
+```
+load_module /path/to/modules/ngx_http_proxy_connect_module.so;
+```
+
+* :exclamation: Note that the ngx_http_proxy_connect_module.so file MUST be loaded by nginx binary that is compiled with the .so file at the same time.
+
 
 Build OpenResty
 ---------------
