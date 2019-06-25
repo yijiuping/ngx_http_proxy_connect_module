@@ -17,6 +17,7 @@ Table of Contents
       * [build nginx](#build-nginx)
          * [build as a dynamic module](#build-as-a-dynamic-module)
       * [build OpenResty](#build-openresty)
+   * [Test Suite](#test-suite)
    * [Directive](#directive)
       * [proxy_connect](#proxy_connect)
       * [proxy_connect_allow](#proxy_connect_allow)
@@ -324,6 +325,17 @@ proxy_connect_bind $remote_addr transparent;
 In order for this parameter to work, it is usually necessary to run nginx worker processes with the [superuser](http://nginx.org/en/docs/ngx_core_module.html#user) privileges. On Linux it is not required (1.13.8) as if the transparent parameter is specified, worker processes inherit the CAP_NET_RAW capability from the master process. It is also necessary to configure kernel routing table to intercept network traffic from the proxied server.
 
 NOTE: If using `set $<nginx variable>` and `proxy_connect_bind $<nginx variable>` together, you should use `proxy_connect_rewrite.patch` instead, see [Install](#install) for more details.
+
+Test Suite
+==========
+
+* To run the whole test suite:
+
+```bash
+$ hg clone http://hg.nginx.org/nginx-tests/
+$ export TEST_NGINX_BINARY=/path/to/nginx/binary
+$ prove -v -I /path/to/nginx-tests/lib /path/to/ngx_http_proxy_connect_module/t/
+```
 
 Variables
 =========
