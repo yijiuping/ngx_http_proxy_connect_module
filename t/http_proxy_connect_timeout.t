@@ -27,10 +27,10 @@ my $t = Test::Nginx->new()->has(qw/http proxy/); #->plan(12);
 
 ###############################################################################
 
-my $test_enable_rewrite_phase = 0;
+my $test_enable_rewrite_phase = 1;
 
-if (defined $ENV{TEST_ENABLE_REWRITE_PHASE}) {
-    $test_enable_rewrite_phase = 1;
+if (defined $ENV{TEST_DISABLE_REWRITE_PHASE}) {
+    $test_enable_rewrite_phase = 0;
 }
 
 print("+ test_enable_rewrite_phase: $test_enable_rewrite_phase\n");
