@@ -18,6 +18,7 @@ Table of Contents
          * [build as a dynamic module](#build-as-a-dynamic-module)
       * [build OpenResty](#build-openresty)
    * [Test Suite](#test-suite)
+   * [Error Log](#error-log)
    * [Directive](#directive)
       * [proxy_connect](#proxy_connect)
       * [proxy_connect_allow](#proxy_connect_allow)
@@ -335,6 +336,18 @@ Test Suite
 $ hg clone http://hg.nginx.org/nginx-tests/
 $ export TEST_NGINX_BINARY=/path/to/nginx/binary
 $ prove -v -I /path/to/nginx-tests/lib /path/to/ngx_http_proxy_connect_module/t/
+```
+
+Error Log
+=========
+
+This module logs its own error message beginning with `"proxy_connect:"` string.  
+Some typical error logs are shown as following:
+
+* The proxy_connect module tries to establish tunnel connection with backend server, but the TCP connection timeout occurs.
+
+```
+2019/08/07 17:27:20 [error] 19257#0: *1 proxy_connect: upstream connect timed out (peer:216.58.200.4:443) while connecting to upstream, client: 127.0.0.1, server: , request: "CONNECT www.google.com:443 HTTP/1.1", host: "www.google.com:443"
 ```
 
 Variables

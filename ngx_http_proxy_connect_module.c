@@ -373,7 +373,7 @@ ngx_http_proxy_connect_test_connect(ngx_connection_t *c)
 
             c->log->action = "connecting to upstream";
             (void) ngx_connection_error(c, err,
-                                    "kevent() reported that connect() failed");
+                              "proxy_connet: upstream connect failed (kevent)");
             return NGX_ERROR;
         }
 
@@ -395,8 +395,9 @@ ngx_http_proxy_connect_test_connect(ngx_connection_t *c)
         }
 
         if (err) {
-            c->log->action = "connecting to upstream (proxy_connect)";
-            (void) ngx_connection_error(c, err, "connect() failed");
+            c->log->action = "connecting to upstream";
+            (void) ngx_connection_error(c, err,
+                                      "proxy_connect: upstream connect failed");
             return NGX_ERROR;
         }
     }
@@ -740,7 +741,8 @@ ngx_http_proxy_connect_read_downstream(ngx_http_request_t *r)
 
     if (r->connection->read->timedout) {
         r->connection->timedout = 1;
-        ngx_connection_error(r->connection, NGX_ETIMEDOUT, "client timed out");
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "proxy_connect: client read timed out");
         ngx_http_proxy_connect_finalize_request(r, ctx->u,
                                                 NGX_HTTP_REQUEST_TIME_OUT);
         return;
@@ -759,7 +761,8 @@ ngx_http_proxy_connect_write_downstream(ngx_http_request_t *r)
 
     if (r->connection->write->timedout) {
         r->connection->timedout = 1;
-        ngx_connection_error(r->connection, NGX_ETIMEDOUT, "client timed out");
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "proxy_connect: client write timed out");
         ngx_http_proxy_connect_finalize_request(r, ctx->u,
                                                 NGX_HTTP_REQUEST_TIME_OUT);
         return;
@@ -784,7 +787,9 @@ ngx_http_proxy_connect_read_upstream(ngx_http_request_t *r,
     c = u->peer.connection;
 
     if (c->read->timedout) {
-        ngx_connection_error(c, NGX_ETIMEDOUT, "upstream timed out");
+        ngx_log_error(NGX_LOG_ERR, c->log, 0,
+                      "proxy_connect: upstream read timed out (peer:%V)",
+                      u->peer.name);
         ngx_http_proxy_connect_finalize_request(r, u, NGX_HTTP_GATEWAY_TIME_OUT);
         return;
     }
@@ -837,8 +842,9 @@ ngx_http_proxy_connect_write_upstream(ngx_http_request_t *r,
                    "proxy_connect upstream write handler");
 
     if (c->write->timedout) {
-        ngx_connection_error(c, NGX_ETIMEDOUT,
-                             "upstream timed out (proxy_connect)");
+        ngx_log_error(NGX_LOG_ERR, c->log, 0,
+                      "proxy_connect: upstream %s timed out (peer:%V)",
+                      u->connected ? "write" : "connect", u->peer.name);
         ngx_http_proxy_connect_finalize_request(r, u,
                                                 NGX_HTTP_GATEWAY_TIME_OUT);
         return;
@@ -890,8 +896,8 @@ ngx_http_proxy_connect_send_handler(ngx_http_request_t *r)
 
     if (c->write->timedout) {
         c->timedout = 1;
-        ngx_connection_error(c, NGX_ETIMEDOUT,
-                             "client timed out (proxy_connect)");
+        ngx_log_error(NGX_LOG_ERR, c->log, 0,
+                      "proxy_connect: client write timed out");
         ngx_http_proxy_connect_finalize_request(r, ctx->u,
                                                 NGX_HTTP_REQUEST_TIME_OUT);
         return;
@@ -947,7 +953,7 @@ ngx_http_proxy_connect_process_connect(ngx_http_request_t *r,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);
 
-    r->connection->log->action = "connecting to upstream (proxy_connect)";
+    r->connection->log->action = "connecting to upstream";
 
     if (ngx_http_proxy_connect_set_local(r, u, u->conf->local) != NGX_OK) {
         ngx_http_proxy_connect_finalize_request(r, u, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -975,13 +981,15 @@ ngx_http_proxy_connect_process_connect(ngx_http_request_t *r,
     }
 
     if (rc == NGX_BUSY) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "no live connection");
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "proxy_connect: no live connection");
         ngx_http_proxy_connect_finalize_request(r, u, NGX_HTTP_BAD_GATEWAY);
         return;
     }
 
     if (rc == NGX_DECLINED) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "connection error");
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "proxy_connect: connection error");
         ngx_http_proxy_connect_finalize_request(r, u, NGX_HTTP_BAD_GATEWAY);
         return;
     }
@@ -1046,7 +1054,7 @@ ngx_http_proxy_connect_resolve_handler(ngx_resolver_ctx_t *ctx)
 
     if (ctx->state) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "%V could not be resolved (%i: %s)",
+                      "proxy_connect: %V could not be resolved (%i: %s)",
                       &ctx->name, ctx->state,
                       ngx_resolver_strerror(ctx->state));
 
@@ -1403,12 +1411,13 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
     url.no_resolve = 1;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "connect handler: parse url: %V" , &url);
+                   "connect handler: parse url: %V" , &url.url);
 
     if (ngx_parse_url(r->pool, &url) != NGX_OK) {
         if (url.err) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "%s in connect host \"%V\"", url.err, &url.url);
+                          "proxy_connect: %s in connect host \"%V\"",
+                          url.err, &url.url);
             return NGX_HTTP_FORBIDDEN;
         }
 
@@ -1469,13 +1478,14 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
     rctx = ngx_resolve_start(clcf->resolver, &temp);
     if (rctx == NULL) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "failed to start the resolver");
+                      "proxy_connect: failed to start the resolver");
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
     if (rctx == NGX_NO_RESOLVER) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "no resolver defined to resolve %V", &r->connect_host);
+                      "proxy_connect: no resolver defined to resolve %V",
+                      &r->connect_host);
         return NGX_HTTP_BAD_GATEWAY;
     }
 
@@ -1797,7 +1807,7 @@ ngx_http_proxy_connect_set_local(ngx_http_request_t *r,
 
     if (rc != NGX_OK) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "invalid local address \"%V\"", &val);
+                      "proxy_connect: invalid local address \"%V\"", &val);
         return NGX_OK;
     }
 
@@ -1960,7 +1970,8 @@ ngx_http_proxy_connect_variable_set_time(ngx_http_request_t *r,
 
     if (ms == (ngx_msec_t) NGX_ERROR) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "[proxy_connect] invalid msec \"%V\" (ctx offset=%ui)", &s, data);
+                      "proxy_connect: invalid msec \"%V\" (ctx offset=%ui)",
+                      &s, data);
         return;
     }
 
@@ -1969,7 +1980,7 @@ ngx_http_proxy_connect_variable_set_time(ngx_http_request_t *r,
     if (ctx == NULL) {
 #if 0
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "[proxy_connect] no ctx found");
+                      "proxy_connect: no ctx found");
 #endif
         return;
     }
