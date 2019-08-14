@@ -38,6 +38,7 @@ Table of Contents
       * [Nginx Compatibility](#nginx-compatibility)
       * [OpenResty Compatibility](#openresty-compatibility)
       * [Tengine Compatibility](#tengine-compatibility)
+   * [FAQ](#faq)
    * [Known Issues](#known-issues)
    * [See Also](#see-also)
    * [Author](#author)
@@ -433,6 +434,11 @@ This module has been integrated into Tengine 2.3.0.
 
 * [Tengine ngx_http_proxy_connect_module documentation](http://tengine.taobao.org/document/proxy_connect.html)
 * [Merged pull request for Tengine 2.3.0](https://github.com/alibaba/tengine/pull/1210).
+
+FAQ
+===
+
+See [FAQ page](https://github.com/chobits/ngx_http_proxy_connect_module/wiki/FAQ).
 
 Known Issues
 ============
