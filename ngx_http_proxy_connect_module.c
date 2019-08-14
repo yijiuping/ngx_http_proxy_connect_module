@@ -411,7 +411,7 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     ngx_http_proxy_connect_upstream_t *u, ngx_int_t rc)
 {
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "finalize proxy_conncet upstream request: %i", rc);
+                   "proxy_connect: finalize upstream request: %i", rc);
 
     r->keepalive = 0;
 
@@ -428,7 +428,7 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     if (u->peer.connection) {
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "close proxy_connect upstream connection: %d",
+                       "proxy_connect: close upstream connection: %d",
                        u->peer.connection->fd);
 
         if (u->peer.connection->pool) {
@@ -475,7 +475,7 @@ ngx_http_proxy_connect_send_connection_established(ngx_http_request_t *r)
     c = r->connection;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "proxy_connect send 200 connection established");
+                   "proxy_connect: send 200 connection established");
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
@@ -497,7 +497,7 @@ ngx_http_proxy_connect_send_connection_established(ngx_http_request_t *r)
 
             if (b->pos == b->last) {
                 ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                              "proxy_connect sent 200 connection established");
+                              "proxy_connect: sent 200 connection established");
 
                 if (c->write->timer_set) {
                     ngx_del_timer(c->write);
@@ -571,7 +571,7 @@ ngx_http_proxy_connect_tunnel(ngx_http_request_t *r,
     u = ctx->u;
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                   "http proxy_connect, fu:%ui write:%ui",
+                   "proxy_connect: tunnel fu:%ui write:%ui",
                    from_upstream, do_write);
 
     downstream = c;
@@ -667,7 +667,7 @@ ngx_http_proxy_connect_tunnel(ngx_http_request_t *r,
         || (downstream->read->eof && upstream->read->eof))
     {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                       "http proxy_connect done");
+                       "proxy_connect: tunnel done");
         ngx_http_proxy_connect_finalize_request(r, u, 0);
         return;
     }
@@ -780,7 +780,7 @@ ngx_http_proxy_connect_read_upstream(ngx_http_request_t *r,
     ngx_http_proxy_connect_ctx_t        *ctx;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "proxy_connect upstream read handler");
+                   "proxy_connect: upstream read handler");
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);
 
@@ -839,7 +839,7 @@ ngx_http_proxy_connect_write_upstream(ngx_http_request_t *r,
     c = u->peer.connection;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "proxy_connect upstream write handler");
+                   "proxy_connect: upstream write handler");
 
     if (c->write->timedout) {
         ngx_log_error(NGX_LOG_ERR, c->log, 0,
@@ -892,7 +892,7 @@ ngx_http_proxy_connect_send_handler(ngx_http_request_t *r)
     ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "proxy_connect send connection established handler");
+                   "proxy_connect: send connection established handler");
 
     if (c->write->timedout) {
         c->timedout = 1;
@@ -927,7 +927,7 @@ ngx_http_proxy_connect_upstream_handler(ngx_event_t *ev)
     lctx->current_request = r;
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                   "http proxy_connect upstream handler: \"%V:%V\"",
+                   "proxy_connect: upstream handler: \"%V:%V\"",
                    &r->connect_host, &r->connect_port);
 
     if (ev->write) {
@@ -972,7 +972,7 @@ ngx_http_proxy_connect_process_connect(ngx_http_request_t *r,
     rc = ngx_event_connect_peer(&u->peer);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "proxy_connect upstream connect: %i", rc);
+                   "proxy_connect: ngx_event_connect_peer() returns %i", rc);
 
     if (rc == NGX_ERROR) {
         ngx_http_proxy_connect_finalize_request(r, u,
@@ -1050,7 +1050,7 @@ ngx_http_proxy_connect_resolve_handler(ngx_resolver_ctx_t *ctx)
     c = r->connection;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "proxy_connect resolve handler");
+                   "proxy_connect: resolve handler");
 
     if (ctx->state) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -1079,7 +1079,7 @@ ngx_http_proxy_connect_resolve_handler(ngx_resolver_ctx_t *ctx)
                                  text, NGX_SOCKADDR_STRLEN, 0);
 
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "name was resolved to %V", &addr);
+                       "proxy_connect: name was resolved to %V", &addr);
     }
 #   else
     ngx_uint_t  i;
@@ -1089,7 +1089,7 @@ ngx_http_proxy_connect_resolve_handler(ngx_resolver_ctx_t *ctx)
         addr = ntohl(ctx->addrs[i]);
 
         ngx_log_debug4(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                       "name was resolved to %ud.%ud.%ud.%ud",
+                       "proxy_connect: name was resolved to %ud.%ud.%ud.%ud",
                        (addr >> 24) & 0xff, (addr >> 16) & 0xff,
                        (addr >> 8) & 0xff, addr & 0xff);
     }
@@ -1221,7 +1221,7 @@ ngx_http_proxy_connect_check_broken_connection(ngx_http_request_t *r,
     ngx_http_proxy_connect_upstream_t  *u;
 
     ngx_log_debug3(NGX_LOG_DEBUG_HTTP, ev->log, 0,
-                   "http proxy_connect check client, write event:%d, \"%V:%V\"",
+                   "proxy_connect: check client, write event:%d, \"%V:%V\"",
                    ev->write, &r->connect_host, &r->connect_port);
 
     c = r->connection;
@@ -1263,16 +1263,17 @@ ngx_http_proxy_connect_check_broken_connection(ngx_http_request_t *r,
 
         if (u->peer.connection) {
             ngx_log_error(NGX_LOG_INFO, ev->log, ev->kq_errno,
-                          "kevent() reported that client prematurely closed "
-                          "connection, so upstream connection is closed too");
+                          "proxy_connect: kevent() reported that client "
+                          "prematurely closed connection, so upstream "
+                          " connection is closed too");
             ngx_http_proxy_connect_finalize_request(r, u,
                                                NGX_HTTP_CLIENT_CLOSED_REQUEST);
             return;
         }
 
         ngx_log_error(NGX_LOG_INFO, ev->log, ev->kq_errno,
-                      "kevent() reported that client prematurely closed "
-                      "connection");
+                      "proxy_connect: kevent() reported that client "
+                      "prematurely closed connection");
 
         if (u->peer.connection == NULL) {
             ngx_http_proxy_connect_finalize_request(r, u,
@@ -1289,7 +1290,7 @@ ngx_http_proxy_connect_check_broken_connection(ngx_http_request_t *r,
     err = ngx_socket_errno;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ev->log, err,
-                   "http proxy_connect upstream recv(): %d", n);
+                   "proxy_connect: upstream recv(): %d", n);
 
     if (ev->write && (n >= 0 || err == NGX_EAGAIN)) {
         return;
@@ -1326,7 +1327,7 @@ ngx_http_proxy_connect_check_broken_connection(ngx_http_request_t *r,
 
     if (u->peer.connection) {
         ngx_log_error(NGX_LOG_INFO, ev->log, err,
-                      "client prematurely closed connection, "
+                      "proxy_connect: client prematurely closed connection, "
                       "so upstream connection is closed too");
         ngx_http_proxy_connect_finalize_request(r, u,
                                            NGX_HTTP_CLIENT_CLOSED_REQUEST);
@@ -1334,7 +1335,7 @@ ngx_http_proxy_connect_check_broken_connection(ngx_http_request_t *r,
     }
 
     ngx_log_error(NGX_LOG_INFO, ev->log, err,
-                  "client prematurely closed connection");
+                  "proxy_connect: client prematurely closed connection");
 
     if (u->peer.connection == NULL) {
         ngx_http_proxy_connect_finalize_request(r, u,
@@ -1411,7 +1412,7 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
     url.no_resolve = 1;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "connect handler: parse url: %V" , &url.url);
+                   "proxy_connect: connect handler: parse url: %V" , &url.url);
 
     if (ngx_parse_url(r->pool, &url) != NGX_OK) {
         if (url.err) {
@@ -1441,7 +1442,7 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
 
     if (url.addrs) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "connect network address given directly");
+                       "proxy_connect: upstream address given directly");
 
         u->resolved->sockaddr = url.addrs[0].sockaddr;
         u->resolved->socklen = url.addrs[0].socklen;
@@ -1503,7 +1504,7 @@ ngx_http_proxy_connect_handler(ngx_http_request_t *r)
 
     if (ngx_resolve_name(rctx) != NGX_OK) {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "proxy_connect fail to run resolver immediately");
+                       "proxy_connect: fail to run resolver immediately");
 
         u->resolved->ctx = NULL;
         r->main->count--;
@@ -2021,7 +2022,7 @@ ngx_http_proxy_connect_post_read_handler(ngx_http_request_t *r)
 
         if (!pclcf->accept_connect) {
             ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                          "client sent connect method");
+                          "proxy_connect: client sent connect method");
             return NGX_HTTP_BAD_REQUEST;
         }
 
