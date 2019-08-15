@@ -12,6 +12,7 @@ Table of Contents
       * [configuration example](#configuration-example)
       * [example for curl](#example-for-curl)
       * [example for browser](#example-for-browser)
+      * [example for basic authentication](#example-for-basic-authentication)
    * [Install](#install)
       * [select patch](#select-patch)
       * [build nginx](#build-nginx)
@@ -152,6 +153,14 @@ Example for browser
 You can configure your browser to use this nginx as PROXY server.
 
 * Google Chrome HTTPS PROXY SETTING: [guide & config](https://github.com/chobits/ngx_http_proxy_connect_module/issues/22#issuecomment-346941271) for how to configure this module working under SSL layer.
+
+
+Example for Basic Authentication
+--------------------------------
+
+We can do access control on CONNECT request using nginx auth basic module.  
+See [this guide](https://github.com/chobits/ngx_http_proxy_connect_module/issues/42#issuecomment-502985437) for more details.
+
 
 Install
 =======
