@@ -239,6 +239,29 @@ $ patch -d build/nginx-1.15.8/ -p 1 < /path/to/ngx_http_proxy_connect_module/pat
 $ make && make install
 ```
 
+Test Suite
+==========
+
+* To run the whole test suite:
+
+```bash
+$ hg clone http://hg.nginx.org/nginx-tests/
+$ export TEST_NGINX_BINARY=/path/to/nginx/binary
+$ prove -v -I /path/to/nginx-tests/lib /path/to/ngx_http_proxy_connect_module/t/
+```
+
+Error Log
+=========
+
+This module logs its own error message beginning with `"proxy_connect:"` string.  
+Some typical error logs are shown as following:
+
+* The proxy_connect module tries to establish tunnel connection with backend server, but the TCP connection timeout occurs.
+
+```
+2019/08/07 17:27:20 [error] 19257#0: *1 proxy_connect: upstream connect timed out (peer:216.58.200.4:443) while connecting to upstream, client: 127.0.0.1, server: , request: "CONNECT www.google.com:443 HTTP/1.1", host: "www.google.com:443"
+```
+
 Directive
 =========
 
@@ -336,29 +359,6 @@ proxy_connect_bind $remote_addr transparent;
 In order for this parameter to work, it is usually necessary to run nginx worker processes with the [superuser](http://nginx.org/en/docs/ngx_core_module.html#user) privileges. On Linux it is not required (1.13.8) as if the transparent parameter is specified, worker processes inherit the CAP_NET_RAW capability from the master process. It is also necessary to configure kernel routing table to intercept network traffic from the proxied server.
 
 NOTE: If using `set $<nginx variable>` and `proxy_connect_bind $<nginx variable>` together, you should use `proxy_connect_rewrite.patch` instead, see [Install](#install) for more details.
-
-Test Suite
-==========
-
-* To run the whole test suite:
-
-```bash
-$ hg clone http://hg.nginx.org/nginx-tests/
-$ export TEST_NGINX_BINARY=/path/to/nginx/binary
-$ prove -v -I /path/to/nginx-tests/lib /path/to/ngx_http_proxy_connect_module/t/
-```
-
-Error Log
-=========
-
-This module logs its own error message beginning with `"proxy_connect:"` string.  
-Some typical error logs are shown as following:
-
-* The proxy_connect module tries to establish tunnel connection with backend server, but the TCP connection timeout occurs.
-
-```
-2019/08/07 17:27:20 [error] 19257#0: *1 proxy_connect: upstream connect timed out (peer:216.58.200.4:443) while connecting to upstream, client: 127.0.0.1, server: , request: "CONNECT www.google.com:443 HTTP/1.1", host: "www.google.com:443"
-```
 
 Variables
 =========
