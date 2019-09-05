@@ -129,7 +129,7 @@ The sequence diagram of above example is as following:
     |   Connection Established    |                          |
     |                             |                          |
     |                                                        |
-    ========= CONNECT tunnel has been establesied. ===========
+    ========= CONNECT tunnel has been established. ===========
     |                                                        |
     |                             |                          |
     |                             |                          |
@@ -187,7 +187,7 @@ Select patch
 | 1.15.8 | YES | [proxy_connect_rewrite_101504.patch](patch/proxy_connect_rewrite_101504.patch) |
 
 * `proxy_connect_<VERSION>.patch` disables nginx REWRITE phase for CONNECT request by default, which means `if`, `set`, `rewrite_by_lua` and other REWRITE phase directives cannot be used.
-* `proxy_conenct_rewrite_<VERSION>.patch` enables these REWRITE phase directives.
+* `proxy_connect_rewrite_<VERSION>.patch` enables these REWRITE phase directives.
 
 Build nginx
 -----------
