@@ -178,7 +178,7 @@ Select patch
 | 1.13.x ~ 1.14.x  | YES | [proxy_connect_rewrite_1014.patch](patch/proxy_connect_rewrite_1014.patch) |
 | 1.15.2           | YES | [proxy_connect_rewrite_1015.patch](patch/proxy_connect_rewrite_1015.patch) |
 | 1.15.4 ~ 1.16.x  | YES | [proxy_connect_rewrite_101504.patch](patch/proxy_connect_rewrite_101504.patch) |
-| 1.17.x           | YES | [proxy_connect_rewrite_101504.patch](patch/proxy_connect_rewrite_101504.patch) |
+| 1.17.x ~ 1.18.0  | YES | [proxy_connect_rewrite_1018.patch](patch/proxy_connect_rewrite_1018.patch) |
 
 | OpenResty version | enable REWRITE phase | patch |
 | --: | --: | --: |
