@@ -35,6 +35,8 @@ Table of Contents
       * [$proxy_connect_connect_timeout](#proxy_connect_connect_timeout-1)
       * [$proxy_connect_read_timeout](#proxy_connect_read_timeout-1)
       * [$proxy_connect_send_timeout](#proxy_connect_send_timeout-1)
+      * [$proxy_connect_resolve_time](#proxy_connect_resolve_time)
+      * [$proxy_connect_connect_time](#proxy_connect_connect_time)
    * [Compatibility](#compatibility)
       * [Nginx Compatibility](#nginx-compatibility)
       * [OpenResty Compatibility](#openresty-compatibility)
@@ -412,6 +414,23 @@ $proxy_connect_send_timeout
 ---------------------------
 
 Get or set a timeout of [`proxy_connect_send_timeout` directive](#proxy_connect_send_timeout).
+
+$proxy_connect_resolve_time
+---------------------------
+
+Keeps time spent on name resolving; the time is kept in seconds with millisecond resolution.
+
+* Value of "" means this module does not work on this request.
+* Value of "-" means name resolving failed.
+
+
+$proxy_connect_connect_time
+---------------------------
+
+Keeps time spent on establishing a connection with the upstream server; the time is kept in seconds with millisecond resolution.
+
+* Value of "" means this module does not work on this request.
+* Value of "-" means name resolving or connecting failed.
 
 Compatibility
 =============
