@@ -187,6 +187,7 @@ Select patch
 | 1.13.6 | NO  | [proxy_connect_1014.patch](patch/proxy_connect_1014.patch) |
 | 1.13.6 | YES | [proxy_connect_rewrite_1014.patch](patch/proxy_connect_rewrite_1014.patch) |
 | 1.15.8 | YES | [proxy_connect_rewrite_101504.patch](patch/proxy_connect_rewrite_101504.patch) |
+| 1.17.8 | YES | [proxy_connect_rewrite_1018.patch](patch/proxy_connect_rewrite_1018.patch) |
 
 * `proxy_connect_<VERSION>.patch` disables nginx REWRITE phase for CONNECT request by default, which means `if`, `set`, `rewrite_by_lua` and other REWRITE phase directives cannot be used.
 * `proxy_connect_rewrite_<VERSION>.patch` enables these REWRITE phase directives.
@@ -456,6 +457,7 @@ The latest module is compatible with the following versions of OpenResty:
 
 * 1.13.6 (version: 1.13.6.2)
 * 1.15.8 (version: 1.15.8.1)
+* 1.17.8 (version: 1.17.8.2)
 
 Tengine Compatibility
 ---------------------
