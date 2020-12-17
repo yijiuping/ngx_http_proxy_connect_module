@@ -69,7 +69,7 @@ struct ngx_http_proxy_connect_upstream_s {
 
     ngx_buf_t                                      buffer;
 
-    /* 1: DNS resolving successed */
+    /* 1: DNS resolving succeeded */
     ngx_flag_t                                     _resolved;
 
     /* 1: connection established */
