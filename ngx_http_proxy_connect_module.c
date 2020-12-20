@@ -94,7 +94,7 @@ typedef struct {
     ngx_flag_t                      send_established;
     ngx_flag_t                      send_established_done;
 
-    ngx_buf_t                       buf;
+    ngx_buf_t                       buf;    /* CONNECT response */
 
     ngx_msec_t                      connect_timeout;
     ngx_msec_t                      send_timeout;
@@ -130,6 +130,10 @@ static void ngx_http_proxy_connect_variable_set_time(ngx_http_request_t *r,
 static ngx_int_t ngx_http_proxy_connect_resolve_time_variable(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_http_proxy_connect_connect_time_variable(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data);
+static ngx_int_t ngx_http_proxy_connect_variable_get_response(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data);
+static void ngx_http_proxy_connect_variable_set_response(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 
 static ngx_int_t ngx_http_proxy_connect_sock_ntop(ngx_http_request_t *r,
@@ -264,6 +268,12 @@ static ngx_http_variable_t  ngx_http_proxy_connect_vars[] = {
     { ngx_string("proxy_connect_connect_time"), NULL,
       ngx_http_proxy_connect_connect_time_variable, 0,
       NGX_HTTP_VAR_NOCACHEABLE, 0 },
+
+    { ngx_string("proxy_connect_response"),
+      ngx_http_proxy_connect_variable_set_response,
+      ngx_http_proxy_connect_variable_get_response,
+      offsetof(ngx_http_proxy_connect_ctx_t, buf),
+      NGX_HTTP_VAR_NOCACHEABLE|NGX_HTTP_VAR_CHANGEABLE, 0 },
 
     { ngx_null_string, NULL, NULL, 0, 0, 0 }
 };
@@ -1013,7 +1023,7 @@ ngx_http_proxy_connect_process_connect(ngx_http_request_t *r,
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "proxy_connect: ngx_event_connect_peer() returns %i", rc);
 
-    /* 
+    /*
      * We do not retry next upstream if current connecting fails.
      * So there is no ngx_http_proxy_connect_upstream_next() function
      */
@@ -2158,6 +2168,54 @@ ngx_http_proxy_connect_connect_time_variable(ngx_http_request_t *r,
     return NGX_OK;
 }
 
+
+static ngx_int_t
+ngx_http_proxy_connect_variable_get_response(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data)
+{
+    ngx_http_proxy_connect_ctx_t       *ctx;
+
+    if (r->method != NGX_HTTP_CONNECT) {
+        return NGX_OK;
+    }
+
+    v->valid = 1;
+    v->no_cacheable = 0;
+    v->not_found = 0;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);
+
+    if (ctx == NULL) {
+        v->not_found = 1;
+        return NGX_OK;
+    }
+
+    v->data = ctx->buf.pos;
+    v->len = ctx->buf.last - ctx->buf.pos;
+
+    return NGX_OK;
+}
+
+
+static void
+ngx_http_proxy_connect_variable_set_response(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data)
+{
+    ngx_http_proxy_connect_ctx_t       *ctx;
+
+    if (r->method != NGX_HTTP_CONNECT) {
+        return;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);
+
+    if (ctx == NULL) {
+        return;
+    }
+
+    ctx->buf.pos = (u_char *) v->data;
+    ctx->buf.last = ctx->buf.pos + v->len;
+}
 
 static ngx_int_t
 ngx_http_proxy_connect_add_variables(ngx_conf_t *cf)

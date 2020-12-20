@@ -37,6 +37,7 @@ Table of Contents
       * [$proxy_connect_send_timeout](#proxy_connect_send_timeout-1)
       * [$proxy_connect_resolve_time](#proxy_connect_resolve_time)
       * [$proxy_connect_connect_time](#proxy_connect_connect_time)
+      * [$proxy_connect_response](#proxy_connect_response)
    * [Compatibility](#compatibility)
       * [Nginx Compatibility](#nginx-compatibility)
       * [OpenResty Compatibility](#openresty-compatibility)
@@ -434,6 +435,36 @@ Keeps time spent on establishing a connection with the upstream server; the time
 
 * Value of "" means this module does not work on this request.
 * Value of "-" means name resolving or connecting failed.
+
+
+$proxy_connect_response
+---------------------------
+
+Get or set the response of CONNECT request.  
+The default response of CONNECT request is "HTTP/1.1 200 Connection Established\r\nProxy-agent: nginx\r\n\r\n".
+
+Note that it is only used for CONNECT request, it cannot modify the data flow over CONNECT tunnel.
+
+For example:
+
+```nginx
+
+# modify default Proxy-agent header
+set $proxy_connect_response "HTTP/1.1 200\r\nProxy-agent: nginx/1.19\r\n\r\n";
+```
+
+The variable value does not support nginx variables. You can use lua-nginx-module to construct string that contains nginx variable. For example:
+
+```nginx
+
+# The CONNECT response may be "HTTP/1.1 200\r\nProxy-agent: nginx/1.19.6\r\n\r\n"
+
+rewrite_by_lua '
+    ngx.var.proxy_connect_response =
+      string.format("HTTP/1.1 200\\r\\nProxy-agent: nginx/%s\\r\\n\\r\\n", ngx.var.nginx_version)
+';
+```
+
 
 Compatibility
 =============
