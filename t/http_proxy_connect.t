@@ -47,6 +47,9 @@ my %route_map;
 my %aroute_map = (
     'www.test-a.com' => [[300, "127.0.0.1"]],
     'www.test-b.com' => [[300, "127.0.0.1"]],
+    'get-default-response.com' => [[300, "127.0.0.1"]],
+    'set-response-header.com' => [[300, "127.0.0.1"]],
+    'set-response-status.com' => [[300, "127.0.0.1"]],
 );
 
 # AAAA record (ipv6)
@@ -280,6 +283,70 @@ like(http_get('/404'), qr/ 404 Not Found/, '404 for default root directive witho
 
 $t->stop();
 
+###############################################################################
+
+$t->write_file_expand('nginx.conf', <<'EOF');
+
+%%TEST_GLOBALS%%
+
+daemon         off;
+
+events {
+}
+
+http {
+    %%TEST_GLOBALS_HTTP%%
+
+    access_log off;
+
+    resolver 127.0.0.1:18085 ipv6=off;      # NOTE: cannot connect ipv6 address ::1 in mac os x.
+
+    server {
+        listen       127.0.0.1:8080;
+        proxy_connect;
+        proxy_connect_allow all;
+
+        if ($host = "get-default-response.com") {
+            return 403 "|$proxy_connect_response|";
+        }
+
+        if ($host = "set-response-header.com") {
+            set $proxy_connect_response "HTTP/1.1 200\r\nFoo: bar\r\n\r\n";
+        }
+
+        if ($host = "set-response-status.com") {
+            set $proxy_connect_response "HTTP/1.1 403\r\n\r\n";
+        }
+    }
+
+    server {
+        listen  8081;
+        location / {
+            return 200 "backend";
+        }
+    }
+}
+
+EOF
+
+# test $proxy_connect_response variable
+
+$t->run();
+
+if ($test_enable_rewrite_phase) {
+    like(http_connect_request('www.test-a.com', '8081', '/'), qr/OK/, 'nothing changed with CONNECT response');
+
+    like(http_connect_request_raw('get-default-response.com', '8081', '/'),
+         qr/\|HTTP\/1\.1 200 Connection Established\r\nProxy-agent: nginx\r\n\r\n\|/,
+        'get default CONNECT response');
+
+    like(http_connect_request('set-response-header.com', '8081', '/'), qr/Foo: bar\r/, 'added header "Foo: bar" to CONNECT response');
+    like(http_connect_request('set-response-status.com', '8081', '/'), qr/HTTP\/1.1 403/, 'change CONNECT response status');
+}
+
+$t->stop();
+
+
 
 # --- stop DNS server ---
 
@@ -331,6 +398,57 @@ EOF
         return '' if $extra{aborted};
         $reply = $s->getline();
         alarm(0);
+    };
+    alarm(0);
+    if ($@) {
+        log_in("died: $@");
+        return undef;
+    }
+    log_in($reply);
+    return $reply;
+}
+
+sub http_connect_request_raw {
+    my ($host, $port, $url) = @_;
+    my $r = http_connect_raw($host, $port, <<EOF);
+GET $url HTTP/1.0
+Host: $host
+Connection: close
+
+EOF
+    return $r
+}
+
+sub http_connect_raw($;%) {
+    my ($host, $port, $request, %extra) = @_;
+    my $reply;
+    eval {
+        local $SIG{ALRM} = sub { die "timeout\n" };
+        local $SIG{PIPE} = sub { die "sigpipe\n" };
+        alarm(2);
+        my $s = IO::Socket::INET->new(
+            Proto => 'tcp',
+            PeerAddr => '127.0.0.1:8080'
+        );
+        $s->print(<<EOF);
+CONNECT $host:$port HTTP/1.0
+Host: $host
+
+EOF
+        select undef, undef, undef, $extra{sleep} if $extra{sleep};
+        return '' if $extra{aborted};
+        my $n = $s->sysread($reply, 65536);
+        return unless $n;
+        return $reply;
+
+        # ignore data flow over CONNECT tunnel
+        #log_out($request);
+        #$s->print($request);
+        #local $/;
+        #select undef, undef, undef, $extra{sleep} if $extra{sleep};
+        #return '' if $extra{aborted};
+        #$reply =  $s->getline();
+        #alarm(0);
     };
     alarm(0);
     if ($@) {
