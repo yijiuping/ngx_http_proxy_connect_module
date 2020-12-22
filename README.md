@@ -28,6 +28,7 @@ Table of Contents
       * [proxy_connect_send_timeout](#proxy_connect_send_timeout)
       * [proxy_connect_address](#proxy_connect_address)
       * [proxy_connect_bind](#proxy_connect_bind)
+      * [proxy_connect_response](#proxy_connect_response)
    * [Variables](#variables)
       * [$connect_host](#connect_host)
       * [$connect_port](#connect_port)
@@ -37,7 +38,7 @@ Table of Contents
       * [$proxy_connect_send_timeout](#proxy_connect_send_timeout-1)
       * [$proxy_connect_resolve_time](#proxy_connect_resolve_time)
       * [$proxy_connect_connect_time](#proxy_connect_connect_time)
-      * [$proxy_connect_response](#proxy_connect_response)
+      * [$proxy_connect_response](#proxy_connect_response-1)
    * [Compatibility](#compatibility)
       * [Nginx Compatibility](#nginx-compatibility)
       * [OpenResty Compatibility](#openresty-compatibility)
@@ -367,6 +368,44 @@ In order for this parameter to work, it is usually necessary to run nginx worker
 
 NOTE: If using `set $<nginx variable>` and `proxy_connect_bind $<nginx variable>` together, you should use `proxy_connect_rewrite.patch` instead, see [Install](#install) for more details.
 
+proxy_connect_response
+----------------------
+
+Syntax: **proxy_connect_response `CONNECT response`**  
+Default: `HTTP/1.1 200 Connection Established\r\nProxy-agent: nginx\r\n\r\n`  
+Context: `server`
+
+Set the response of CONNECT request.
+
+Note that it is only used for CONNECT request, it cannot modify the data flow over CONNECT tunnel.
+
+For example:
+
+```
+proxy_connect_response "HTTP/1.1 200 Connection Established\r\nProxy-agent: nginx\r\nX-Proxy-Connected-Addr: $connect_addr\r\n\r\n";
+
+```
+
+The `curl` command test case with above config is as following:
+
+```
+$ curl https://github.com -sv -x localhost:3128
+* Connected to localhost (127.0.0.1) port 3128 (#0)
+* allocate connect buffer!
+* Establish HTTP proxy tunnel to github.com:443
+> CONNECT github.com:443 HTTP/1.1
+> Host: github.com:443
+> User-Agent: curl/7.64.1
+> Proxy-Connection: Keep-Alive
+>
+< HTTP/1.1 200 Connection Established            --.
+< Proxy-agent: nginx                               | custom CONNECT response
+< X-Proxy-Connected-Addr: 13.229.188.59:443      --'
+...
+
+```
+
+
 Variables
 =========
 
@@ -464,6 +503,8 @@ rewrite_by_lua '
       string.format("HTTP/1.1 200\\r\\nProxy-agent: nginx/%s\\r\\n\\r\\n", ngx.var.nginx_version)
 ';
 ```
+
+Also note that `set` or `rewrite_by_lua*` directive is run during the REWRITE phase, which is ahead of dns resolving phase. It cannot get right value of some variables, for example, `$connect_addr` value is `nil`. In such case, you should use [`proxy_connect_response` directive](#proxy_connect_response) instead.
 
 
 Compatibility

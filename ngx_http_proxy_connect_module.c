@@ -37,6 +37,8 @@ typedef struct {
 
     ngx_http_complex_value_t            *address;
     ngx_http_proxy_connect_address_t    *local;
+
+    ngx_http_complex_value_t            *response;
 } ngx_http_proxy_connect_loc_conf_t;
 
 
@@ -201,6 +203,12 @@ static ngx_command_t  ngx_http_proxy_connect_commands[] = {
       offsetof(ngx_http_proxy_connect_loc_conf_t, local),
       NULL },
 
+    { ngx_string("proxy_connect_response"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_http_set_complex_value_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_proxy_connect_loc_conf_t, response),
+      NULL },
 
     ngx_null_command
 };
@@ -529,6 +537,23 @@ ngx_http_proxy_connect_send_connection_established(ngx_http_request_t *r)
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
     b = &ctx->buf;
+
+    /* modify CONNECT response via proxy_connect_response directive */
+    {
+    ngx_str_t                               resp;
+    ngx_http_proxy_connect_loc_conf_t      *plcf;
+
+    plcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_connect_module);
+
+    if (plcf->response
+        && ngx_http_complex_value(r, plcf->response, &resp) == NGX_OK)
+    {
+        if (resp.len > 0) {
+            b->pos = resp.data;
+            b->last = b->pos + resp.len;
+        }
+    }
+    }
 
     ctx->send_established = 1;
 

@@ -346,6 +346,52 @@ if ($test_enable_rewrite_phase) {
 
 $t->stop();
 
+###############################################################################
+
+$t->write_file_expand('nginx.conf', <<'EOF');
+
+%%TEST_GLOBALS%%
+
+daemon         off;
+
+events {
+}
+
+http {
+    %%TEST_GLOBALS_HTTP%%
+
+    access_log off;
+
+    resolver 127.0.0.1:18085 ipv6=off;      # NOTE: cannot connect ipv6 address ::1 in mac os x.
+
+    server {
+        listen       127.0.0.1:8080;
+        proxy_connect;
+        proxy_connect_allow all;
+
+        proxy_connect_response "HTTP/1.1 200 Connection Established\r\nProxy-agent: nginx\r\nX-Proxy-Connected-Addr: $connect_addr\r\n\r\n";
+    }
+
+    server {
+        listen  8081;
+        location / {
+            return 200 "backend";
+        }
+    }
+}
+
+EOF
+
+# test proxy_connect_response directive
+
+$t->run();
+
+if ($test_enable_rewrite_phase) {
+    like(http_connect_request('set-response-header.com', '8081', '/'), qr/X-Proxy-Connected-Addr: 127.0.0.1:8081\r/, 'added header "Foo: bar" to CONNECT response');
+}
+
+$t->stop();
+
 
 
 # --- stop DNS server ---
