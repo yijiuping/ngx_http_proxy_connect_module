@@ -163,7 +163,7 @@ index 6460da29..7b209fa8 100644
          case sw_spaces_before_uri:
  
 diff --git a/src/http/ngx_http_request.c b/src/http/ngx_http_request.c
-index 2d1845d0..c65dd9f1 100644
+index 2d1845d0..ca1e5c0a 100644
 --- a/src/http/ngx_http_request.c
 +++ b/src/http/ngx_http_request.c
 @@ -1118,6 +1118,53 @@ ngx_http_process_request_line(ngx_event_t *rev)
@@ -240,6 +240,20 @@ index 2d1845d0..c65dd9f1 100644
          if (r->host_start) {
              r->host_start = new + (r->host_start - old);
              if (r->host_end) {
+@@ -2015,13 +2075,6 @@ ngx_http_process_request_header(ngx_http_request_t *r)
+         }
+     }
+ 
+-    if (r->method == NGX_HTTP_CONNECT) {
+-        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+-                      "client sent CONNECT method");
+-        ngx_http_finalize_request(r, NGX_HTTP_NOT_ALLOWED);
+-        return NGX_ERROR;
+-    }
+-
+     if (r->method == NGX_HTTP_TRACE) {
+         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+                       "client sent TRACE method");
 diff --git a/src/http/ngx_http_request.h b/src/http/ngx_http_request.h
 index 63576274..cac53b68 100644
 --- a/src/http/ngx_http_request.h
