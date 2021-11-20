@@ -245,7 +245,7 @@ $ wget https://openresty.org/download/openresty-1.19.3.1.tar.gz
 $ tar -zxvf openresty-1.19.3.1.tar.gz
 $ cd openresty-1.19.3.1
 $ ./configure --add-module=/path/to/ngx_http_proxy_connect_module
-$ patch -d build/nginx-1.15.8/ -p 1 < /path/to/ngx_http_proxy_connect_module/patch/proxy_connect_rewrite_101504.patch
+$ patch -d build/nginx-1.19.3/ -p 1 < /path/to/ngx_http_proxy_connect_module/patch/proxy_connect_rewrite_101504.patch
 $ make && make install
 ```
 
