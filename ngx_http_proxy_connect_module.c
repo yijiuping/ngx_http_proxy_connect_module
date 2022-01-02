@@ -10,17 +10,17 @@
 
 
 #define NGX_HTTP_PROXY_CONNECT_ESTABLISTHED     \
-"HTTP/1.1 200 Connection Established\r\n"   \
-"Proxy-agent: nginx\r\n\r\n"
+    "HTTP/1.1 200 Connection Established\r\n"   \
+    "Proxy-agent: nginx\r\n\r\n"
 
 
 typedef struct ngx_http_proxy_connect_upstream_s
-ngx_http_proxy_connect_upstream_t;
+    ngx_http_proxy_connect_upstream_t;
 typedef struct ngx_http_proxy_connect_address_s
-ngx_http_proxy_connect_address_t;
+    ngx_http_proxy_connect_address_t;
 
 typedef void (*ngx_http_proxy_connect_upstream_handler_pt)(
-        ngx_http_request_t *r, ngx_http_proxy_connect_upstream_t *u);
+    ngx_http_request_t *r, ngx_http_proxy_connect_upstream_t *u);
 
 
 typedef struct {
@@ -119,210 +119,210 @@ static char *ngx_http_access_ctrl_rule(ngx_conf_t *cf, ngx_command_t *cmd, void 
 static ngx_int_t ngx_http_proxy_connect_init(ngx_conf_t *cf);
 static ngx_int_t ngx_http_proxy_connect_add_variables(ngx_conf_t *cf);
 static ngx_int_t ngx_http_proxy_connect_connect_addr_variable(
-        ngx_http_request_t *r, ngx_http_variable_value_t *v, uintptr_t data);
+    ngx_http_request_t *r, ngx_http_variable_value_t *v, uintptr_t data);
 static char *ngx_http_proxy_connect(ngx_conf_t *cf, ngx_command_t *cmd,
-                                    void *conf);
+    void *conf);
 static char *ngx_http_proxy_connect_allow(ngx_conf_t *cf, ngx_command_t *cmd,
-                                          void *conf);
+    void *conf);
 static void *ngx_http_proxy_connect_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_proxy_connect_merge_loc_conf(ngx_conf_t *cf, void *parent,
-                                                   void *child);
+    void *child);
 static void ngx_http_proxy_connect_write_downstream(ngx_http_request_t *r);
 static void ngx_http_proxy_connect_read_downstream(ngx_http_request_t *r);
 static void ngx_http_proxy_connect_send_handler(ngx_http_request_t *r);
 static ngx_int_t ngx_http_proxy_connect_allow_handler(ngx_http_request_t *r,
-                                                      ngx_http_proxy_connect_loc_conf_t *plcf);
+    ngx_http_proxy_connect_loc_conf_t *plcf);
 static char* ngx_http_proxy_connect_bind(ngx_conf_t *cf, ngx_command_t *cmd,
-                                         void *conf);
+    void *conf);
 static ngx_int_t ngx_http_proxy_connect_set_local(ngx_http_request_t *r,
-                                                  ngx_http_proxy_connect_upstream_t *u, ngx_http_proxy_connect_address_t *local);
+  ngx_http_proxy_connect_upstream_t *u, ngx_http_proxy_connect_address_t *local);
 static ngx_int_t ngx_http_proxy_connect_variable_get_time(ngx_http_request_t *r,
-                                                          ngx_http_variable_value_t *v, uintptr_t data);
+    ngx_http_variable_value_t *v, uintptr_t data);
 static void ngx_http_proxy_connect_variable_set_time(ngx_http_request_t *r,
-                                                     ngx_http_variable_value_t *v, uintptr_t data);
+    ngx_http_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_http_proxy_connect_resolve_time_variable(ngx_http_request_t *r,
-                                                              ngx_http_variable_value_t *v, uintptr_t data);
+    ngx_http_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_http_proxy_connect_connect_time_variable(ngx_http_request_t *r,
-                                                              ngx_http_variable_value_t *v, uintptr_t data);
+    ngx_http_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_http_proxy_connect_variable_get_response(ngx_http_request_t *r,
-                                                              ngx_http_variable_value_t *v, uintptr_t data);
+    ngx_http_variable_value_t *v, uintptr_t data);
 static void ngx_http_proxy_connect_variable_set_response(ngx_http_request_t *r,
-                                                         ngx_http_variable_value_t *v, uintptr_t data);
+    ngx_http_variable_value_t *v, uintptr_t data);
 
 static ngx_int_t ngx_http_proxy_connect_sock_ntop(ngx_http_request_t *r,
-                                                  ngx_http_proxy_connect_upstream_t *u);
+    ngx_http_proxy_connect_upstream_t *u);
 static ngx_int_t ngx_http_proxy_connect_create_peer(ngx_http_request_t *r,
-                                                    ngx_http_upstream_resolved_t *ur);
+    ngx_http_upstream_resolved_t *ur);
 
 
 
 static ngx_command_t  ngx_http_proxy_connect_commands[] = {
 
-        { ngx_string("proxy_connect"),
-          NGX_HTTP_SRV_CONF|NGX_CONF_NOARGS,
-          ngx_http_proxy_connect,
-          NGX_HTTP_LOC_CONF_OFFSET,
-          offsetof(ngx_http_proxy_connect_loc_conf_t, accept_connect),
-          NULL },
+    { ngx_string("proxy_connect"),
+      NGX_HTTP_SRV_CONF|NGX_CONF_NOARGS,
+      ngx_http_proxy_connect,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_proxy_connect_loc_conf_t, accept_connect),
+      NULL },
 
-          { ngx_string("proxy_connect_allow"),
-            NGX_HTTP_SRV_CONF|NGX_CONF_1MORE,
-            ngx_http_proxy_connect_allow,
-            NGX_HTTP_LOC_CONF_OFFSET,
-            0,
-            NULL },
+    { ngx_string("proxy_connect_allow"),
+      NGX_HTTP_SRV_CONF|NGX_CONF_1MORE,
+      ngx_http_proxy_connect_allow,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      NULL },
 
-            { ngx_string("proxy_connect_read_timeout"),
-              NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
-              ngx_conf_set_msec_slot,
-              NGX_HTTP_LOC_CONF_OFFSET,
-              offsetof(ngx_http_proxy_connect_loc_conf_t, read_timeout),
-              NULL },
+    { ngx_string("proxy_connect_read_timeout"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_msec_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_proxy_connect_loc_conf_t, read_timeout),
+      NULL },
 
-              { ngx_string("proxy_connect_send_timeout"),
-                NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
-                ngx_conf_set_msec_slot,
-                NGX_HTTP_LOC_CONF_OFFSET,
-                offsetof(ngx_http_proxy_connect_loc_conf_t, send_timeout),
-                NULL },
+    { ngx_string("proxy_connect_send_timeout"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_msec_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_proxy_connect_loc_conf_t, send_timeout),
+      NULL },
 
-                { ngx_string("proxy_connect_connect_timeout"),
-                  NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
-                  ngx_conf_set_msec_slot,
-                  NGX_HTTP_LOC_CONF_OFFSET,
-                  offsetof(ngx_http_proxy_connect_loc_conf_t, connect_timeout),
-                  NULL },
+    { ngx_string("proxy_connect_connect_timeout"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_msec_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_proxy_connect_loc_conf_t, connect_timeout),
+      NULL },
 
-                  { ngx_string("proxy_connect_send_lowat"),
-                    NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
-                    ngx_conf_set_size_slot,
-                    NGX_HTTP_LOC_CONF_OFFSET,
-                    offsetof(ngx_http_proxy_connect_loc_conf_t, send_lowat),
-                    NULL },
+    { ngx_string("proxy_connect_send_lowat"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_size_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_proxy_connect_loc_conf_t, send_lowat),
+      NULL },
 
-                    { ngx_string("proxy_connect_address"),
-                      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
-                      ngx_http_set_complex_value_slot,
-                      NGX_HTTP_LOC_CONF_OFFSET,
-                      offsetof(ngx_http_proxy_connect_loc_conf_t, address),
-                      NULL },
+    { ngx_string("proxy_connect_address"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_http_set_complex_value_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_proxy_connect_loc_conf_t, address),
+      NULL },
 
-                      { ngx_string("proxy_connect_bind"),
-                        NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE12,
-                        ngx_http_proxy_connect_bind,
-                        NGX_HTTP_LOC_CONF_OFFSET,
-                        offsetof(ngx_http_proxy_connect_loc_conf_t, local),
-                        NULL },
+    { ngx_string("proxy_connect_bind"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE12,
+      ngx_http_proxy_connect_bind,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_proxy_connect_loc_conf_t, local),
+      NULL },
 
-                        { ngx_string("proxy_connect_response"),
-                          NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
-                          ngx_http_set_complex_value_slot,
-                          NGX_HTTP_LOC_CONF_OFFSET,
-                          offsetof(ngx_http_proxy_connect_loc_conf_t, response),
-                          NULL },
+    { ngx_string("proxy_connect_response"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_http_set_complex_value_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_proxy_connect_loc_conf_t, response),
+      NULL },
 
-                          {ngx_string("website_access_ctrl"),
-                           NGX_HTTP_SRV_CONF | NGX_CONF_FLAG,
-                           ngx_conf_set_flag_slot,
-                           NGX_HTTP_LOC_CONF_OFFSET,
-                           offsetof(ngx_http_proxy_connect_loc_conf_t, website_access_ctrl),
-                           NULL},
+    {ngx_string("website_access_ctrl"),
+     NGX_HTTP_SRV_CONF | NGX_CONF_FLAG,
+     ngx_conf_set_flag_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_proxy_connect_loc_conf_t, website_access_ctrl),
+     NULL},
 
-                           {ngx_string("website_whitelist_mode"),
-                            NGX_HTTP_SRV_CONF | NGX_CONF_FLAG,
-                            ngx_conf_set_flag_slot,
-                            NGX_HTTP_LOC_CONF_OFFSET,
-                            offsetof(ngx_http_proxy_connect_loc_conf_t, website_whitelist_mode),
-                            NULL},
+    {ngx_string("website_whitelist_mode"),
+     NGX_HTTP_SRV_CONF | NGX_CONF_FLAG,
+     ngx_conf_set_flag_slot,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     offsetof(ngx_http_proxy_connect_loc_conf_t, website_whitelist_mode),
+     NULL},
 
-                            {ngx_string("allow_website"),
-                             NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1,
-                             ngx_http_access_ctrl_rule,
-                             NGX_HTTP_LOC_CONF_OFFSET,
-                             0,
-                             NULL},
+    {ngx_string("allow_website"),
+     NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1,
+     ngx_http_access_ctrl_rule,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     0,
+     NULL},
 
-                             {ngx_string("deny_website"),
-                              NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1,
-                              ngx_http_access_ctrl_rule,
-                              NGX_HTTP_LOC_CONF_OFFSET,
-                              0,
-                              NULL},
+    {ngx_string("deny_website"),
+     NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1,
+     ngx_http_access_ctrl_rule,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     0,
+     NULL},
 
-                              ngx_null_command
+    ngx_null_command
 };
 
 
 static ngx_http_module_t  ngx_http_proxy_connect_module_ctx = {
-        ngx_http_proxy_connect_add_variables,   /* preconfiguration */
-        ngx_http_proxy_connect_init,            /* postconfiguration */
+    ngx_http_proxy_connect_add_variables,   /* preconfiguration */
+    ngx_http_proxy_connect_init,            /* postconfiguration */
 
-        NULL,                                   /* create main configuration */
-        NULL,                                   /* init main configuration */
+    NULL,                                   /* create main configuration */
+    NULL,                                   /* init main configuration */
 
-        NULL,                                   /* create server configuration */
-        NULL,                                   /* merge server configuration */
+    NULL,                                   /* create server configuration */
+    NULL,                                   /* merge server configuration */
 
-        ngx_http_proxy_connect_create_loc_conf, /* create location configuration */
-        ngx_http_proxy_connect_merge_loc_conf   /* merge location configuration */
+    ngx_http_proxy_connect_create_loc_conf, /* create location configuration */
+    ngx_http_proxy_connect_merge_loc_conf   /* merge location configuration */
 };
 
 
 ngx_module_t  ngx_http_proxy_connect_module = {
-        NGX_MODULE_V1,
-        &ngx_http_proxy_connect_module_ctx,     /* module context */
-        ngx_http_proxy_connect_commands,        /* module directives */
-        NGX_HTTP_MODULE,                        /* module type */
-        NULL,                                   /* init master */
-        NULL,                                   /* init module */
-        NULL,                                   /* init process */
-        NULL,                                   /* init thread */
-        NULL,                                   /* exit thread */
-        NULL,                                   /* exit process */
-        NULL,                                   /* exit master */
-        NGX_MODULE_V1_PADDING
+    NGX_MODULE_V1,
+    &ngx_http_proxy_connect_module_ctx,     /* module context */
+    ngx_http_proxy_connect_commands,        /* module directives */
+    NGX_HTTP_MODULE,                        /* module type */
+    NULL,                                   /* init master */
+    NULL,                                   /* init module */
+    NULL,                                   /* init process */
+    NULL,                                   /* init thread */
+    NULL,                                   /* exit thread */
+    NULL,                                   /* exit process */
+    NULL,                                   /* exit master */
+    NGX_MODULE_V1_PADDING
 };
 
 
 static ngx_http_variable_t  ngx_http_proxy_connect_vars[] = {
 
-        { ngx_string("connect_addr"), NULL,
-          ngx_http_proxy_connect_connect_addr_variable,
-          0, NGX_HTTP_VAR_NOCACHEABLE, 0 },
+    { ngx_string("connect_addr"), NULL,
+      ngx_http_proxy_connect_connect_addr_variable,
+      0, NGX_HTTP_VAR_NOCACHEABLE, 0 },
 
-          { ngx_string("proxy_connect_connect_timeout"),
-            ngx_http_proxy_connect_variable_set_time,
-            ngx_http_proxy_connect_variable_get_time,
-            offsetof(ngx_http_proxy_connect_ctx_t, connect_timeout),
-            NGX_HTTP_VAR_NOCACHEABLE|NGX_HTTP_VAR_CHANGEABLE, 0 },
+    { ngx_string("proxy_connect_connect_timeout"),
+      ngx_http_proxy_connect_variable_set_time,
+      ngx_http_proxy_connect_variable_get_time,
+      offsetof(ngx_http_proxy_connect_ctx_t, connect_timeout),
+      NGX_HTTP_VAR_NOCACHEABLE|NGX_HTTP_VAR_CHANGEABLE, 0 },
 
-            { ngx_string("proxy_connect_read_timeout"),
-              ngx_http_proxy_connect_variable_set_time,
-              ngx_http_proxy_connect_variable_get_time,
-              offsetof(ngx_http_proxy_connect_ctx_t, read_timeout),
-              NGX_HTTP_VAR_NOCACHEABLE|NGX_HTTP_VAR_CHANGEABLE, 0 },
+    { ngx_string("proxy_connect_read_timeout"),
+      ngx_http_proxy_connect_variable_set_time,
+      ngx_http_proxy_connect_variable_get_time,
+      offsetof(ngx_http_proxy_connect_ctx_t, read_timeout),
+      NGX_HTTP_VAR_NOCACHEABLE|NGX_HTTP_VAR_CHANGEABLE, 0 },
 
-              { ngx_string("proxy_connect_send_timeout"),
-                ngx_http_proxy_connect_variable_set_time,
-                ngx_http_proxy_connect_variable_get_time,
-                offsetof(ngx_http_proxy_connect_ctx_t, send_timeout),
-                NGX_HTTP_VAR_NOCACHEABLE|NGX_HTTP_VAR_CHANGEABLE, 0 },
+    { ngx_string("proxy_connect_send_timeout"),
+      ngx_http_proxy_connect_variable_set_time,
+      ngx_http_proxy_connect_variable_get_time,
+      offsetof(ngx_http_proxy_connect_ctx_t, send_timeout),
+      NGX_HTTP_VAR_NOCACHEABLE|NGX_HTTP_VAR_CHANGEABLE, 0 },
 
-                { ngx_string("proxy_connect_resolve_time"), NULL,
-                  ngx_http_proxy_connect_resolve_time_variable, 0,
-                  NGX_HTTP_VAR_NOCACHEABLE, 0 },
+    { ngx_string("proxy_connect_resolve_time"), NULL,
+      ngx_http_proxy_connect_resolve_time_variable, 0,
+      NGX_HTTP_VAR_NOCACHEABLE, 0 },
 
-                  { ngx_string("proxy_connect_connect_time"), NULL,
-                    ngx_http_proxy_connect_connect_time_variable, 0,
-                    NGX_HTTP_VAR_NOCACHEABLE, 0 },
+    { ngx_string("proxy_connect_connect_time"), NULL,
+      ngx_http_proxy_connect_connect_time_variable, 0,
+      NGX_HTTP_VAR_NOCACHEABLE, 0 },
 
-                    { ngx_string("proxy_connect_response"),
-                      ngx_http_proxy_connect_variable_set_response,
-                      ngx_http_proxy_connect_variable_get_response,
-                      offsetof(ngx_http_proxy_connect_ctx_t, buf),
-                      NGX_HTTP_VAR_NOCACHEABLE|NGX_HTTP_VAR_CHANGEABLE, 0 },
+    { ngx_string("proxy_connect_response"),
+      ngx_http_proxy_connect_variable_set_response,
+      ngx_http_proxy_connect_variable_get_response,
+      offsetof(ngx_http_proxy_connect_ctx_t, buf),
+      NGX_HTTP_VAR_NOCACHEABLE|NGX_HTTP_VAR_CHANGEABLE, 0 },
 
-                      { ngx_null_string, NULL, NULL, 0, 0, 0 }
+    { ngx_null_string, NULL, NULL, 0, 0, 0 }
 };
 
 
@@ -344,7 +344,7 @@ static ngx_http_variable_t  ngx_http_proxy_connect_vars[] = {
  */
 static void
 __ngx_inet_set_port(struct sockaddr *sa, in_port_t port)
-        {
+{
     struct sockaddr_in   *sin;
 #if (NGX_HAVE_INET6)
     struct sockaddr_in6  *sin6;
@@ -353,29 +353,29 @@ __ngx_inet_set_port(struct sockaddr *sa, in_port_t port)
     switch (sa->sa_family) {
 
 #if (NGX_HAVE_INET6)
-        case AF_INET6:
-            sin6 = (struct sockaddr_in6 *) sa;
-            sin6->sin6_port = htons(port);
-            break;
+    case AF_INET6:
+        sin6 = (struct sockaddr_in6 *) sa;
+        sin6->sin6_port = htons(port);
+        break;
 #endif
 
 #if (NGX_HAVE_UNIX_DOMAIN)
-            case AF_UNIX:
-                break;
+    case AF_UNIX:
+        break;
 #endif
 
-            default: /* AF_INET */
-            sin = (struct sockaddr_in *) sa;
-            sin->sin_port = htons(port);
-            break;
+    default: /* AF_INET */
+        sin = (struct sockaddr_in *) sa;
+        sin->sin_port = htons(port);
+        break;
     }
-        }
+}
 
 
-        static ngx_int_t
-        __ngx_parse_addr_port(ngx_pool_t *pool, ngx_addr_t *addr, u_char *text,
-                              size_t len)
-                              {
+static ngx_int_t
+__ngx_parse_addr_port(ngx_pool_t *pool, ngx_addr_t *addr, u_char *text,
+    size_t len)
+{
     u_char     *p, *last;
     size_t      plen;
     ngx_int_t   rc, port;
@@ -403,7 +403,7 @@ __ngx_inet_set_port(struct sockaddr *sa, in_port_t port)
     } else
 #endif
 
-{
+    {
         p = ngx_strlchr(text, last, ':');
 
         if (p == NULL) {
@@ -431,7 +431,7 @@ __ngx_inet_set_port(struct sockaddr *sa, in_port_t port)
     __ngx_inet_set_port(addr->sockaddr, (in_port_t) port);
 
     return NGX_OK;
-                              }
+}
 
 #endif
 
@@ -462,13 +462,13 @@ ngx_http_proxy_connect_test_connect(ngx_connection_t *c)
 
             c->log->action = "connecting to upstream";
             (void) ngx_connection_error(c, err,
-                                        "proxy_connet: upstream connect failed (kevent)");
+                              "proxy_connet: upstream connect failed (kevent)");
             return NGX_ERROR;
         }
 
     } else
 #endif
-{
+    {
         err = 0;
         len = sizeof(int);
 
@@ -478,7 +478,7 @@ ngx_http_proxy_connect_test_connect(ngx_connection_t *c)
          */
 
         if (getsockopt(c->fd, SOL_SOCKET, SO_ERROR, (void *) &err, &len)
-        == -1)
+            == -1)
         {
             err = ngx_errno;
         }
@@ -486,7 +486,7 @@ ngx_http_proxy_connect_test_connect(ngx_connection_t *c)
         if (err) {
             c->log->action = "connecting to upstream";
             (void) ngx_connection_error(c, err,
-                                        "proxy_connect: upstream connect failed");
+                                      "proxy_connect: upstream connect failed");
             return NGX_ERROR;
         }
     }
@@ -497,8 +497,8 @@ ngx_http_proxy_connect_test_connect(ngx_connection_t *c)
 
 static void
 ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
-                                        ngx_http_proxy_connect_upstream_t *u, ngx_int_t rc)
-                                        {
+    ngx_http_proxy_connect_upstream_t *u, ngx_int_t rc)
+{
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "proxy_connect: finalize upstream request: %i", rc);
 
@@ -536,7 +536,7 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     r->connection->log->action = "sending to client";
 
     if (rc == NGX_HTTP_REQUEST_TIME_OUT
-    || rc == NGX_HTTP_CLIENT_CLOSED_REQUEST)
+        || rc == NGX_HTTP_CLIENT_CLOSED_REQUEST)
     {
         ngx_http_finalize_request(r, rc);
         return;
@@ -547,12 +547,12 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     }
 
     ngx_http_finalize_request(r, rc);
-                                        }
+}
 
 
-                                        static void
-                                        ngx_http_proxy_connect_send_connection_established(ngx_http_request_t *r)
-                                        {
+static void
+ngx_http_proxy_connect_send_connection_established(ngx_http_request_t *r)
+{
     ngx_int_t                              n;
     ngx_buf_t                             *b;
     ngx_connection_t                      *c;
@@ -579,94 +579,94 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
 
     /* modify CONNECT response via proxy_connect_response directive */
     {
-        ngx_str_t                               resp;
-        ngx_http_proxy_connect_loc_conf_t      *plcf;
+    ngx_str_t                               resp;
+    ngx_http_proxy_connect_loc_conf_t      *plcf;
 
-        plcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_connect_module);
+    plcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_connect_module);
 
-        if (plcf->response
+    if (plcf->response
         && ngx_http_complex_value(r, plcf->response, &resp) == NGX_OK)
-        {
-            if (resp.len > 0) {
-                b->pos = resp.data;
-                b->last = b->pos + resp.len;
-            }
+    {
+        if (resp.len > 0) {
+            b->pos = resp.data;
+            b->last = b->pos + resp.len;
         }
+    }
     }
 
     ctx->send_established = 1;
 
-                                            for (;;) {
-                                                n = c->send(c, b->pos, b->last - b->pos);
+    for (;;) {
+        n = c->send(c, b->pos, b->last - b->pos);
 
-                                                if (n >= 0) {
+        if (n >= 0) {
 
-                                                    r->headers_out.status = 200;    /* fixed that $status is 000 */
+            r->headers_out.status = 200;    /* fixed that $status is 000 */
 
-                                                    b->pos += n;
+            b->pos += n;
 
-                                                    if (b->pos == b->last) {
-                                                        ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                                                                       "proxy_connect: sent 200 connection established");
+            if (b->pos == b->last) {
+                ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                              "proxy_connect: sent 200 connection established");
 
-                                                        if (c->write->timer_set) {
-                                                            ngx_del_timer(c->write);
-                                                        }
+                if (c->write->timer_set) {
+                    ngx_del_timer(c->write);
+                }
 
-                                                        ctx->send_established_done = 1;
+                ctx->send_established_done = 1;
 
-                                                        r->write_event_handler =
-                                                                ngx_http_proxy_connect_write_downstream;
-                                                        r->read_event_handler = ngx_http_proxy_connect_read_downstream;
+                r->write_event_handler =
+                                        ngx_http_proxy_connect_write_downstream;
+                r->read_event_handler = ngx_http_proxy_connect_read_downstream;
 
-                                                        if (ngx_handle_write_event(c->write, clcf->send_lowat)
-                                                        != NGX_OK)
-                                                        {
-                                                            ngx_http_proxy_connect_finalize_request(r, u,
-                                                                                                    NGX_HTTP_INTERNAL_SERVER_ERROR);
-                                                            return;
-                                                        }
+                if (ngx_handle_write_event(c->write, clcf->send_lowat)
+                    != NGX_OK)
+                {
+                    ngx_http_proxy_connect_finalize_request(r, u,
+                                                NGX_HTTP_INTERNAL_SERVER_ERROR);
+                    return;
+                }
 
-                                                        if (r->header_in->last > r->header_in->pos || c->read->ready) {
-                                                            r->read_event_handler(r);
-                                                            return;
-                                                        }
+                if (r->header_in->last > r->header_in->pos || c->read->ready) {
+                    r->read_event_handler(r);
+                    return;
+                }
 
-                                                        return;
-                                                    }
+                return;
+            }
 
-                                                    /* keep sending more data */
-                                                    continue;
-                                                }
+            /* keep sending more data */
+            continue;
+        }
 
-                                                /* NGX_ERROR || NGX_AGAIN */
-                                                break;
-                                            }
+        /* NGX_ERROR || NGX_AGAIN */
+        break;
+    }
 
-                                            if (n == NGX_ERROR) {
-                                                ngx_http_proxy_connect_finalize_request(r, u, NGX_ERROR);
-                                                return;
-                                            }
+    if (n == NGX_ERROR) {
+        ngx_http_proxy_connect_finalize_request(r, u, NGX_ERROR);
+        return;
+    }
 
-                                            /* n == NGX_AGAIN */
-                                            r->write_event_handler = ngx_http_proxy_connect_send_handler;
+    /* n == NGX_AGAIN */
+    r->write_event_handler = ngx_http_proxy_connect_send_handler;
 
-                                            ngx_add_timer(c->write, ctx->send_timeout);
+    ngx_add_timer(c->write, ctx->send_timeout);
 
-                                            if (ngx_handle_write_event(c->write, clcf->send_lowat) != NGX_OK) {
-                                                ngx_http_proxy_connect_finalize_request(r, u,
-                                                                                        NGX_HTTP_INTERNAL_SERVER_ERROR);
-                                                return;
-                                            }
+    if (ngx_handle_write_event(c->write, clcf->send_lowat) != NGX_OK) {
+        ngx_http_proxy_connect_finalize_request(r, u,
+                                                NGX_HTTP_INTERNAL_SERVER_ERROR);
+        return;
+    }
 
-                                            return;
-                                        }
+    return;
+}
 
 
-                                        static void
-                                        ngx_http_proxy_connect_tunnel(ngx_http_request_t *r,
-                                                                      ngx_uint_t from_upstream, ngx_uint_t do_write)
-                                                                      {
+static void
+ngx_http_proxy_connect_tunnel(ngx_http_request_t *r,
+    ngx_uint_t from_upstream, ngx_uint_t do_write)
+{
     size_t                              size;
     ssize_t                             n;
     ngx_buf_t                          *b;
@@ -773,8 +773,8 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     }
 
     if ((upstream->read->eof && u->buffer.pos == u->buffer.last)
-    || (downstream->read->eof && u->from_client.pos == u->from_client.last)
-    || (downstream->read->eof && upstream->read->eof))
+        || (downstream->read->eof && u->from_client.pos == u->from_client.last)
+        || (downstream->read->eof && upstream->read->eof))
     {
         ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
                        "proxy_connect: tunnel done");
@@ -785,7 +785,7 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
     if (ngx_handle_write_event(upstream->write, u->conf->send_lowat)
-    != NGX_OK)
+        != NGX_OK)
     {
         ngx_http_proxy_connect_finalize_request(r, u, NGX_ERROR);
         return;
@@ -813,7 +813,7 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     }
 
     if (ngx_handle_write_event(downstream->write, clcf->send_lowat)
-    != NGX_OK)
+        != NGX_OK)
     {
         ngx_http_proxy_connect_finalize_request(r, u, NGX_ERROR);
         return;
@@ -839,12 +839,12 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     } else if (downstream->read->timer_set) {
         ngx_del_timer(downstream->read);
     }
-                                                                      }
+}
 
 
-                                                                      static void
-                                                                      ngx_http_proxy_connect_read_downstream(ngx_http_request_t *r)
-                                                                      {
+static void
+ngx_http_proxy_connect_read_downstream(ngx_http_request_t *r)
+{
     ngx_http_proxy_connect_ctx_t       *ctx;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);
@@ -914,12 +914,12 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     }
 
     ngx_http_proxy_connect_tunnel(r, 0, 0);
-                                                                      }
+}
 
 
-                                                                      static void
-                                                                      ngx_http_proxy_connect_write_downstream(ngx_http_request_t *r)
-                                                                      {
+static void
+ngx_http_proxy_connect_write_downstream(ngx_http_request_t *r)
+{
     ngx_http_proxy_connect_ctx_t       *ctx;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_connect_module);
@@ -934,13 +934,13 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     }
 
     ngx_http_proxy_connect_tunnel(r, 1, 1);
-                                                                      }
+}
 
 
-                                                                      static void
-                                                                      ngx_http_proxy_connect_read_upstream(ngx_http_request_t *r,
-                                                                                                           ngx_http_proxy_connect_upstream_t *u)
-                                                                                                           {
+static void
+ngx_http_proxy_connect_read_upstream(ngx_http_request_t *r,
+    ngx_http_proxy_connect_upstream_t *u)
+{
     ngx_connection_t                    *c;
     ngx_http_proxy_connect_ctx_t        *ctx;
 
@@ -960,7 +960,7 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     }
 
     if (!ctx->send_established &&
-    ngx_http_proxy_connect_test_connect(c) != NGX_OK)
+        ngx_http_proxy_connect_test_connect(c) != NGX_OK)
     {
         ngx_http_proxy_connect_finalize_request(r, u, NGX_HTTP_BAD_GATEWAY);
         return;
@@ -970,7 +970,7 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
         u->buffer.start = ngx_palloc(r->pool, u->conf->buffer_size);
         if (u->buffer.start == NULL) {
             ngx_http_proxy_connect_finalize_request(r, u,
-                                                    NGX_HTTP_INTERNAL_SERVER_ERROR);
+                                               NGX_HTTP_INTERNAL_SERVER_ERROR);
             return;
         }
 
@@ -983,7 +983,7 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     if (!ctx->send_established_done) {
         if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
             ngx_http_proxy_connect_finalize_request(r, u,
-                                                    NGX_HTTP_INTERNAL_SERVER_ERROR);
+                                               NGX_HTTP_INTERNAL_SERVER_ERROR);
             return;
         }
 
@@ -991,13 +991,13 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     }
 
     ngx_http_proxy_connect_tunnel(r, 1, 0);
-                                                                                                           }
+}
 
 
-                                                                                                           static void
-                                                                                                           ngx_http_proxy_connect_write_upstream(ngx_http_request_t *r,
-                                                                                                                                                 ngx_http_proxy_connect_upstream_t *u)
-                                                                                                                                                 {
+static void
+ngx_http_proxy_connect_write_upstream(ngx_http_request_t *r,
+    ngx_http_proxy_connect_upstream_t *u)
+{
     ngx_connection_t  *c;
     ngx_http_proxy_connect_ctx_t          *ctx;
 
@@ -1022,7 +1022,7 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     }
 
     if (!ctx->send_established &&
-    ngx_http_proxy_connect_test_connect(c) != NGX_OK)
+        ngx_http_proxy_connect_test_connect(c) != NGX_OK)
     {
         ngx_http_proxy_connect_finalize_request(r, u, NGX_HTTP_BAD_GATEWAY);
         return;
@@ -1036,7 +1036,7 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     if (!ctx->send_established_done) {
         if (ngx_handle_write_event(c->write, 0) != NGX_OK) {
             ngx_http_proxy_connect_finalize_request(r, u,
-                                                    NGX_HTTP_INTERNAL_SERVER_ERROR);
+                                               NGX_HTTP_INTERNAL_SERVER_ERROR);
             return;
         }
 
@@ -1044,12 +1044,12 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     }
 
     ngx_http_proxy_connect_tunnel(r, 0, 1);
-                                                                                                                                                 }
+}
 
 
-                                                                                                                                                 static void
-                                                                                                                                                 ngx_http_proxy_connect_send_handler(ngx_http_request_t *r)
-                                                                                                                                                 {
+static void
+ngx_http_proxy_connect_send_handler(ngx_http_request_t *r)
+{
     ngx_connection_t                 *c;
     ngx_http_proxy_connect_ctx_t     *ctx;
 
@@ -1071,12 +1071,12 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     if (ctx->buf.pos != ctx->buf.last) {
         ngx_http_proxy_connect_send_connection_established(r);
     }
-                                                                                                                                                 }
+}
 
 
-                                                                                                                                                 static void
-                                                                                                                                                 ngx_http_proxy_connect_upstream_handler(ngx_event_t *ev)
-                                                                                                                                                 {
+static void
+ngx_http_proxy_connect_upstream_handler(ngx_event_t *ev)
+{
     ngx_connection_t                    *c;
     ngx_http_request_t                  *r;
     ngx_http_log_ctx_t                  *lctx;
@@ -1103,13 +1103,13 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     }
 
     ngx_http_run_posted_requests(c);
-                                                                                                                                                 }
+}
 
 
-                                                                                                                                                 static void
-                                                                                                                                                 ngx_http_proxy_connect_process_connect(ngx_http_request_t *r,
-                                                                                                                                                                                        ngx_http_proxy_connect_upstream_t *u)
-                                                                                                                                                                                        {
+static void
+ngx_http_proxy_connect_process_connect(ngx_http_request_t *r,
+    ngx_http_proxy_connect_upstream_t *u)
+{
     ngx_int_t                        rc;
     ngx_connection_t                *c;
     ngx_peer_connection_t           *pc;
@@ -1187,7 +1187,7 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
         c->pool = ngx_create_pool(128, r->connection->log);
         if (c->pool == NULL) {
             ngx_http_proxy_connect_finalize_request(r, u,
-                                                    NGX_HTTP_INTERNAL_SERVER_ERROR);
+                                                NGX_HTTP_INTERNAL_SERVER_ERROR);
             return;
         }
     }
@@ -1202,12 +1202,12 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
     }
 
     ngx_http_proxy_connect_send_connection_established(r);
-                                                                                                                                                                                        }
+}
 
 
-                                                                                                                                                                                        static void
-                                                                                                                                                                                        ngx_http_proxy_connect_resolve_handler(ngx_resolver_ctx_t *ctx)
-                                                                                                                                                                                        {
+static void
+ngx_http_proxy_connect_resolve_handler(ngx_resolver_ctx_t *ctx)
+{
     ngx_connection_t                            *c;
     ngx_http_request_t                          *r;
     ngx_http_upstream_resolved_t                *ur;
@@ -1241,68 +1241,68 @@ ngx_http_proxy_connect_finalize_request(ngx_http_request_t *r,
 #if (NGX_DEBUG)
     {
 #   if defined(nginx_version) && nginx_version >= 1005008
-        ngx_uint_t  i;
-        ngx_str_t   addr;
-        u_char      text[NGX_SOCKADDR_STRLEN];
+    ngx_uint_t  i;
+    ngx_str_t   addr;
+    u_char      text[NGX_SOCKADDR_STRLEN];
 
-        addr.data = text;
+    addr.data = text;
 
-        for (i = 0; i < ctx->naddrs; i++) {
-            addr.len = ngx_sock_ntop(ur->addrs[i].sockaddr, ur->addrs[i].socklen,
-                                     text, NGX_SOCKADDR_STRLEN, 0);
+    for (i = 0; i < ctx->naddrs; i++) {
+        addr.len = ngx_sock_ntop(ur->addrs[i].sockaddr, ur->addrs[i].socklen,
+                                 text, NGX_SOCKADDR_STRLEN, 0);
 
-            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "proxy_connect: name was resolved to %V", &addr);
-        }
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "proxy_connect: name was resolved to %V", &addr);
+    }
 #   else
-        ngx_uint_t  i;
-        in_addr_t   addr;
+    ngx_uint_t  i;
+    in_addr_t   addr;
 
-        for (i = 0; i < ctx->naddrs; i++) {
-            addr = ntohl(ctx->addrs[i]);
+    for (i = 0; i < ctx->naddrs; i++) {
+        addr = ntohl(ctx->addrs[i]);
 
-            ngx_log_debug4(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                           "proxy_connect: name was resolved to %ud.%ud.%ud.%ud",
-                           (addr >> 24) & 0xff, (addr >> 16) & 0xff,
-                           (addr >> 8) & 0xff, addr & 0xff);
-        }
+        ngx_log_debug4(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                       "proxy_connect: name was resolved to %ud.%ud.%ud.%ud",
+                       (addr >> 24) & 0xff, (addr >> 16) & 0xff,
+                       (addr >> 8) & 0xff, addr & 0xff);
+    }
 #   endif
     }
 #endif
 
-if (ngx_http_proxy_connect_create_peer(r, ur) != NGX_OK) {
+    if (ngx_http_proxy_connect_create_peer(r, ur) != NGX_OK) {
         ngx_http_proxy_connect_finalize_request(r, u,
                                                 NGX_HTTP_INTERNAL_SERVER_ERROR);
         goto failed;
     }
 
     ngx_resolve_name_done(ctx);
-                                                                                                                                                                                            ur->ctx = NULL;
+    ur->ctx = NULL;
 
-                                                                                                                                                                                            u->_resolved = 1;
+    u->_resolved = 1;
 
-                                                                                                                                                                                            if (u->state.resolve_time == (ngx_msec_t) -1) {
-                                                                                                                                                                                                u->state.resolve_time = ngx_current_msec - u->start_time;
-                                                                                                                                                                                            }
+    if (u->state.resolve_time == (ngx_msec_t) -1) {
+        u->state.resolve_time = ngx_current_msec - u->start_time;
+    }
 
-                                                                                                                                                                                            ngx_http_proxy_connect_process_connect(r, u);
+    ngx_http_proxy_connect_process_connect(r, u);
 
-                                                                                                                                                                                            failed:
+failed:
 
 #if defined(nginx_version) && nginx_version >= 1013002
-                                                                                                                                                                                            if (run_posted) {
-                                                                                                                                                                                                ngx_http_run_posted_requests(c);
-                                                                                                                                                                                            }
+    if (run_posted) {
+        ngx_http_run_posted_requests(c);
+    }
 #else
-ngx_http_run_posted_requests(c);
+    ngx_http_run_posted_requests(c);
 #endif
-                                                                                                                                                                                        }
+}
 
 
-                                                                                                                                                                                        static ngx_int_t
-                                                                                                                                                                                        ngx_http_proxy_connect_create_peer(ngx_http_request_t *r,
-                                                                                                                                                                                                                           ngx_http_upstream_resolved_t *ur)
-                                                                                                                                                                                                                           {
+static ngx_int_t
+ngx_http_proxy_connect_create_peer(ngx_http_request_t *r,
+    ngx_http_upstream_resolved_t *ur)
+{
     u_char                                      *p;
     ngx_int_t                                    i, len;
     socklen_t                                    socklen;
@@ -1312,63 +1312,63 @@ ngx_http_run_posted_requests(c);
 
 #if defined(nginx_version) && nginx_version >= 1005008
 
-socklen = ur->addrs[i].socklen;
+    socklen = ur->addrs[i].socklen;
 
-sockaddr = ngx_palloc(r->pool, socklen);
-if (sockaddr == NULL) {
-    return NGX_ERROR;
-}
+    sockaddr = ngx_palloc(r->pool, socklen);
+    if (sockaddr == NULL) {
+        return NGX_ERROR;
+    }
 
-ngx_memcpy(sockaddr, ur->addrs[i].sockaddr, socklen);
+    ngx_memcpy(sockaddr, ur->addrs[i].sockaddr, socklen);
 
-switch (sockaddr->sa_family) {
+    switch (sockaddr->sa_family) {
 #if (NGX_HAVE_INET6)
     case AF_INET6:
         ((struct sockaddr_in6 *) sockaddr)->sin6_port = htons(ur->port);
         break;
 #endif
-        default: /* AF_INET */
+    default: /* AF_INET */
         ((struct sockaddr_in *) sockaddr)->sin_port = htons(ur->port);
-}
+    }
 
 #else
-/* for nginx older than 1.5.8 */
+    /* for nginx older than 1.5.8 */
 
-socklen = sizeof(struct sockaddr_in);
+    socklen = sizeof(struct sockaddr_in);
 
-sockaddr = ngx_pcalloc(r->pool, socklen);
-if (sockaddr == NULL) {
-    return NGX_ERROR;
-}
+    sockaddr = ngx_pcalloc(r->pool, socklen);
+    if (sockaddr == NULL) {
+        return NGX_ERROR;
+    }
 
-((struct sockaddr_in *) sockaddr)->sin_family = AF_INET;
-((struct sockaddr_in *) sockaddr)->sin_addr.s_addr = ur->addrs[i];
-((struct sockaddr_in *) sockaddr)->sin_port = htons(ur->port);
+    ((struct sockaddr_in *) sockaddr)->sin_family = AF_INET;
+    ((struct sockaddr_in *) sockaddr)->sin_addr.s_addr = ur->addrs[i];
+    ((struct sockaddr_in *) sockaddr)->sin_port = htons(ur->port);
 
 #endif
 
-p = ngx_pnalloc(r->pool, NGX_SOCKADDR_STRLEN);
-if (p == NULL) {
-    return NGX_ERROR;
+    p = ngx_pnalloc(r->pool, NGX_SOCKADDR_STRLEN);
+    if (p == NULL) {
+        return NGX_ERROR;
+    }
+
+    len = __ngx_sock_ntop(sockaddr, socklen, p, NGX_SOCKADDR_STRLEN, 1);
+
+    ur->sockaddr = sockaddr;
+    ur->socklen = socklen;
+
+    ur->host.data = p;
+    ur->host.len = len;
+    ur->naddrs = 1;
+
+    return NGX_OK;
 }
 
-len = __ngx_sock_ntop(sockaddr, socklen, p, NGX_SOCKADDR_STRLEN, 1);
 
-ur->sockaddr = sockaddr;
-ur->socklen = socklen;
-
-ur->host.data = p;
-ur->host.len = len;
-ur->naddrs = 1;
-
-return NGX_OK;
-                                                                                                                                                                                                                           }
-
-
-                                                                                                                                                                                                                           static ngx_int_t
-                                                                                                                                                                                                                           ngx_http_proxy_connect_upstream_create(ngx_http_request_t *r,
-                                                                                                                                                                                                                                                                  ngx_http_proxy_connect_ctx_t *ctx)
-                                                                                                                                                                                                                                                                  {
+static ngx_int_t
+ngx_http_proxy_connect_upstream_create(ngx_http_request_t *r,
+    ngx_http_proxy_connect_ctx_t *ctx)
+{
     ngx_http_proxy_connect_upstream_t       *u;
 
     u = ngx_pcalloc(r->pool, sizeof(ngx_http_proxy_connect_upstream_t));
@@ -1384,13 +1384,13 @@ return NGX_OK;
     u->request = r;
 
     return NGX_OK;
-                                                                                                                                                                                                                                                                  }
+}
 
 
-                                                                                                                                                                                                                                                                  static void
-                                                                                                                                                                                                                                                                  ngx_http_proxy_connect_check_broken_connection(ngx_http_request_t *r,
-                                                                                                                                                                                                                                                                                                                 ngx_event_t *ev)
-                                                                                                                                                                                                                                                                                                                 {
+static void
+ngx_http_proxy_connect_check_broken_connection(ngx_http_request_t *r,
+    ngx_event_t *ev)
+{
     int                                 n;
     char                                buf[1];
     ngx_err_t                           err;
@@ -1414,13 +1414,13 @@ return NGX_OK;
 
             if (ngx_del_event(ev, event, 0) != NGX_OK) {
                 ngx_http_proxy_connect_finalize_request(r, u,
-                                                        NGX_HTTP_INTERNAL_SERVER_ERROR);
+                                               NGX_HTTP_INTERNAL_SERVER_ERROR);
                 return;
             }
         }
 
         ngx_http_proxy_connect_finalize_request(r, u,
-                                                NGX_HTTP_CLIENT_CLOSED_REQUEST);
+                                               NGX_HTTP_CLIENT_CLOSED_REQUEST);
 
         return;
     }
@@ -1446,7 +1446,7 @@ return NGX_OK;
                           "prematurely closed connection, so upstream "
                           " connection is closed too");
             ngx_http_proxy_connect_finalize_request(r, u,
-                                                    NGX_HTTP_CLIENT_CLOSED_REQUEST);
+                                               NGX_HTTP_CLIENT_CLOSED_REQUEST);
             return;
         }
 
@@ -1456,7 +1456,7 @@ return NGX_OK;
 
         if (u->peer.connection == NULL) {
             ngx_http_proxy_connect_finalize_request(r, u,
-                                                    NGX_HTTP_CLIENT_CLOSED_REQUEST);
+                                               NGX_HTTP_CLIENT_CLOSED_REQUEST);
         }
 
         return;
@@ -1481,7 +1481,7 @@ return NGX_OK;
 
         if (ngx_del_event(ev, event, 0) != NGX_OK) {
             ngx_http_proxy_connect_finalize_request(r, u,
-                                                    NGX_HTTP_INTERNAL_SERVER_ERROR);
+                                               NGX_HTTP_INTERNAL_SERVER_ERROR);
             return;
         }
     }
@@ -1509,7 +1509,7 @@ return NGX_OK;
                       "proxy_connect: client prematurely closed connection, "
                       "so upstream connection is closed too");
         ngx_http_proxy_connect_finalize_request(r, u,
-                                                NGX_HTTP_CLIENT_CLOSED_REQUEST);
+                                           NGX_HTTP_CLIENT_CLOSED_REQUEST);
         return;
     }
 
@@ -1518,28 +1518,28 @@ return NGX_OK;
 
     if (u->peer.connection == NULL) {
         ngx_http_proxy_connect_finalize_request(r, u,
-                                                NGX_HTTP_CLIENT_CLOSED_REQUEST);
+                                           NGX_HTTP_CLIENT_CLOSED_REQUEST);
     }
-                                                                                                                                                                                                                                                                                                                 }
+}
 
 
-                                                                                                                                                                                                                                                                                                                 static void
-                                                                                                                                                                                                                                                                                                                 ngx_http_proxy_connect_rd_check_broken_connection(ngx_http_request_t *r)
-                                                                                                                                                                                                                                                                                                                 {
+static void
+ngx_http_proxy_connect_rd_check_broken_connection(ngx_http_request_t *r)
+{
     ngx_http_proxy_connect_check_broken_connection(r, r->connection->read);
-                                                                                                                                                                                                                                                                                                                 }
+}
 
 
-                                                                                                                                                                                                                                                                                                                 static void
-                                                                                                                                                                                                                                                                                                                 ngx_http_proxy_connect_wr_check_broken_connection(ngx_http_request_t *r)
-                                                                                                                                                                                                                                                                                                                 {
+static void
+ngx_http_proxy_connect_wr_check_broken_connection(ngx_http_request_t *r)
+{
     ngx_http_proxy_connect_check_broken_connection(r, r->connection->write);
-                                                                                                                                                                                                                                                                                                                 }
+}
 
 
-                                                                                                                                                                                                                                                                                                                 static ngx_int_t
-                                                                                                                                                                                                                                                                                                                 ngx_http_proxy_connect_handler(ngx_http_request_t *r)
-                                                                                                                                                                                                                                                                                                                 {
+static ngx_int_t
+ngx_http_proxy_connect_handler(ngx_http_request_t *r)
+{
     ngx_url_t                            url;
     ngx_int_t                            rc;
     ngx_resolver_ctx_t                  *rctx, temp;
@@ -1694,13 +1694,13 @@ return NGX_OK;
     }
 
     return NGX_DONE;
-                                                                                                                                                                                                                                                                                                                 }
+}
 
 
-                                                                                                                                                                                                                                                                                                                 static ngx_int_t
-                                                                                                                                                                                                                                                                                                                 ngx_http_proxy_connect_sock_ntop(ngx_http_request_t *r,
-                                                                                                                                                                                                                                                                                                                                                  ngx_http_proxy_connect_upstream_t *u)
-                                                                                                                                                                                                                                                                                                                                                  {
+static ngx_int_t
+ngx_http_proxy_connect_sock_ntop(ngx_http_request_t *r,
+    ngx_http_proxy_connect_upstream_t *u)
+{
     u_char                          *p;
     ngx_int_t                        len;
     ngx_http_upstream_resolved_t    *ur;
@@ -1720,13 +1720,13 @@ return NGX_OK;
     u->resolved->host.len = len;
 
     return NGX_OK;
-                                                                                                                                                                                                                                                                                                                                                  }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                  static ngx_int_t
-                                                                                                                                                                                                                                                                                                                                                  ngx_http_proxy_connect_allow_handler(ngx_http_request_t *r,
-                                                                                                                                                                                                                                                                                                                                                                                       ngx_http_proxy_connect_loc_conf_t *plcf)
-                                                                                                                                                                                                                                                                                                                                                                                       {
+static ngx_int_t
+ngx_http_proxy_connect_allow_handler(ngx_http_request_t *r,
+    ngx_http_proxy_connect_loc_conf_t *plcf)
+{
     ngx_uint_t  i, allow;
     in_port_t   (*ports)[2];
 
@@ -1745,7 +1745,7 @@ return NGX_OK;
              * port <= connect_port <= eport
              */
             if ((ports[i][1] == 0 && r->connect_port_n == ports[i][0])
-            || (ports[i][0] <= r->connect_port_n && r->connect_port_n <= ports[i][1]))
+                || (ports[i][0] <= r->connect_port_n && r->connect_port_n <= ports[i][1]))
             {
                 allow = 1;
                 break;
@@ -1763,12 +1763,12 @@ return NGX_OK;
     }
 
     return NGX_OK;
-                                                                                                                                                                                                                                                                                                                                                                                       }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                       static char *
-                                                                                                                                                                                                                                                                                                                                                                                       ngx_http_proxy_connect_allow(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
-                                                                                                                                                                                                                                                                                                                                                                                       {
+static char *
+ngx_http_proxy_connect_allow(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
     u_char                              *p;
     in_port_t                           *ports;
     ngx_int_t                            port, eport;
@@ -1802,8 +1802,8 @@ return NGX_OK;
             eport = ngx_atoi(p, value[i].data + value[i].len - p);
 
             if (port == NGX_ERROR || port < 1 || port > 65535
-            || eport == NGX_ERROR || eport < 1 || eport > 65535
-            || port > eport)
+                || eport == NGX_ERROR || eport < 1 || eport > 65535
+                || port > eport)
             {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                    "invalid port range \"%V\" in \"%V\" directive",
@@ -1835,12 +1835,12 @@ return NGX_OK;
     }
 
     return NGX_CONF_OK;
-                                                                                                                                                                                                                                                                                                                                                                                       }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                       static char *
-                                                                                                                                                                                                                                                                                                                                                                                       ngx_http_proxy_connect(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
-                                                                                                                                                                                                                                                                                                                                                                                       {
+static char *
+ngx_http_proxy_connect(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
     ngx_http_core_loc_conf_t            *clcf;
     ngx_http_proxy_connect_loc_conf_t   *pclcf;
 
@@ -1851,13 +1851,13 @@ return NGX_OK;
     pclcf->accept_connect = 1;
 
     return NGX_CONF_OK;
-                                                                                                                                                                                                                                                                                                                                                                                       }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                       char *
-                                                                                                                                                                                                                                                                                                                                                                                       ngx_http_proxy_connect_bind(ngx_conf_t *cf, ngx_command_t *cmd,
-                                                                                                                                                                                                                                                                                                                                                                                                                   void *conf)
-                                                                                                                                                                                                                                                                                                                                                                                                                   {
+char *
+ngx_http_proxy_connect_bind(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
     char  *p = conf;
 
     ngx_int_t                           rc;
@@ -1914,17 +1914,17 @@ return NGX_OK;
                                    value[1].len);
 
         switch (rc) {
-            case NGX_OK:
-                local->addr->name = value[1];
-                break;
+        case NGX_OK:
+            local->addr->name = value[1];
+            break;
 
-                case NGX_DECLINED:
-                    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                                       "invalid address \"%V\"", &value[1]);
-                    /* fall through */
+        case NGX_DECLINED:
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                               "invalid address \"%V\"", &value[1]);
+            /* fall through */
 
-                    default:
-                        return NGX_CONF_ERROR;
+        default:
+            return NGX_CONF_ERROR;
         }
     }
 
@@ -1945,13 +1945,13 @@ return NGX_OK;
     }
 
     return NGX_CONF_OK;
-                                                                                                                                                                                                                                                                                                                                                                                                                   }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                   static ngx_int_t
-                                                                                                                                                                                                                                                                                                                                                                                                                   ngx_http_proxy_connect_set_local(ngx_http_request_t *r,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    ngx_http_proxy_connect_upstream_t *u, ngx_http_proxy_connect_address_t *local)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    {
+static ngx_int_t
+ngx_http_proxy_connect_set_local(ngx_http_request_t *r,
+    ngx_http_proxy_connect_upstream_t *u, ngx_http_proxy_connect_address_t *local)
+{
     ngx_int_t    rc;
     ngx_str_t    val;
     ngx_addr_t  *addr;
@@ -1998,12 +1998,12 @@ return NGX_OK;
     u->peer.local = addr;
 
     return NGX_OK;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    static void *
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    ngx_http_proxy_connect_create_loc_conf(ngx_conf_t *cf)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    {
+static void *
+ngx_http_proxy_connect_create_loc_conf(ngx_conf_t *cf)
+{
     ngx_http_proxy_connect_loc_conf_t  *conf;
 
     conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_proxy_connect_loc_conf_t));
@@ -2034,12 +2034,12 @@ return NGX_OK;
     conf->website_whitelist_mode = NGX_CONF_UNSET;
 
     return conf;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    static char *
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    ngx_http_proxy_connect_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    {
+static char *
+ngx_http_proxy_connect_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
+{
     ngx_http_proxy_connect_loc_conf_t    *prev = parent;
     ngx_http_proxy_connect_loc_conf_t    *conf = child;
 
@@ -2065,13 +2065,13 @@ return NGX_OK;
     ngx_conf_merge_ptr_value(conf->local, prev->local, NULL);
 
     return NGX_CONF_OK;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    static ngx_int_t
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    ngx_http_proxy_connect_connect_addr_variable(ngx_http_request_t *r,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ngx_http_variable_value_t *v, uintptr_t data)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 {
+static ngx_int_t
+ngx_http_proxy_connect_connect_addr_variable(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data)
+{
 
     ngx_http_proxy_connect_upstream_t     *u;
     ngx_http_proxy_connect_ctx_t          *ctx;
@@ -2097,13 +2097,13 @@ return NGX_OK;
     v->data = u->peer.name->data;
 
     return NGX_OK;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 static ngx_int_t
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ngx_http_proxy_connect_variable_get_time(ngx_http_request_t *r,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          ngx_http_variable_value_t *v, uintptr_t data)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          {
+static ngx_int_t
+ngx_http_proxy_connect_variable_get_time(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data)
+{
     u_char                          *p;
     ngx_msec_t                      *msp, ms;
     ngx_http_proxy_connect_ctx_t    *ctx;
@@ -2134,13 +2134,13 @@ return NGX_OK;
     v->data = p;
 
     return NGX_OK;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          static void
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          ngx_http_proxy_connect_variable_set_time(ngx_http_request_t *r,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   ngx_http_variable_value_t *v, uintptr_t data)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   {
+static void
+ngx_http_proxy_connect_variable_set_time(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data)
+{
     ngx_str_t                        s;
     ngx_msec_t                      *msp, ms;
     ngx_http_proxy_connect_ctx_t    *ctx;
@@ -2174,13 +2174,13 @@ return NGX_OK;
     msp = (ngx_msec_t *) ((char *) ctx + data);
 
     *msp = ms;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   static ngx_int_t
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   ngx_http_proxy_connect_resolve_time_variable(ngx_http_request_t *r,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ngx_http_variable_value_t *v, uintptr_t data)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                {
+static ngx_int_t
+ngx_http_proxy_connect_resolve_time_variable(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data)
+{
     u_char                             *p;
     size_t                              len;
     ngx_msec_int_t                      ms;
@@ -2231,13 +2231,13 @@ return NGX_OK;
     v->len = p - v->data;
 
     return NGX_OK;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                static ngx_int_t
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ngx_http_proxy_connect_connect_time_variable(ngx_http_request_t *r,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             ngx_http_variable_value_t *v, uintptr_t data)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             {
+static ngx_int_t
+ngx_http_proxy_connect_connect_time_variable(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data)
+{
     u_char                             *p;
     size_t                              len;
     ngx_msec_int_t                      ms;
@@ -2288,13 +2288,13 @@ return NGX_OK;
     v->len = p - v->data;
 
     return NGX_OK;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             static ngx_int_t
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             ngx_http_proxy_connect_variable_get_response(ngx_http_request_t *r,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          ngx_http_variable_value_t *v, uintptr_t data)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          {
+static ngx_int_t
+ngx_http_proxy_connect_variable_get_response(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data)
+{
     ngx_http_proxy_connect_ctx_t       *ctx;
 
     if (r->method != NGX_HTTP_CONNECT) {
@@ -2316,13 +2316,13 @@ return NGX_OK;
     v->len = ctx->buf.last - ctx->buf.pos;
 
     return NGX_OK;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          static void
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          ngx_http_proxy_connect_variable_set_response(ngx_http_request_t *r,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       ngx_http_variable_value_t *v, uintptr_t data)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       {
+static void
+ngx_http_proxy_connect_variable_set_response(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data)
+{
     ngx_http_proxy_connect_ctx_t       *ctx;
 
     if (r->method != NGX_HTTP_CONNECT) {
@@ -2337,11 +2337,11 @@ return NGX_OK;
 
     ctx->buf.pos = (u_char *) v->data;
     ctx->buf.last = ctx->buf.pos + v->len;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       }
+}
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       static ngx_int_t
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       ngx_http_proxy_connect_add_variables(ngx_conf_t *cf)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       {
+static ngx_int_t
+ngx_http_proxy_connect_add_variables(ngx_conf_t *cf)
+{
     ngx_http_variable_t  *var, *v;
 
     for (v = ngx_http_proxy_connect_vars; v->name.len; v++) {
@@ -2354,12 +2354,12 @@ return NGX_OK;
     }
 
     return NGX_OK;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       }
+}
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       static ngx_int_t
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       ngx_http_proxy_connect_post_read_handler(ngx_http_request_t *r)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       {
+static ngx_int_t
+ngx_http_proxy_connect_post_read_handler(ngx_http_request_t *r)
+{
     ngx_http_proxy_connect_ctx_t      *ctx;
     ngx_http_proxy_connect_loc_conf_t *pclcf;
 
@@ -2382,7 +2382,7 @@ return NGX_OK;
 
         ctx->buf.pos = (u_char *) NGX_HTTP_PROXY_CONNECT_ESTABLISTHED;
         ctx->buf.last = ctx->buf.pos +
-                sizeof(NGX_HTTP_PROXY_CONNECT_ESTABLISTHED) - 1;
+                        sizeof(NGX_HTTP_PROXY_CONNECT_ESTABLISTHED) - 1;
         ctx->buf.memory = 1;
 
         ctx->connect_timeout = pclcf->connect_timeout;
@@ -2393,10 +2393,10 @@ return NGX_OK;
     }
 
     return NGX_DECLINED;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       }
+}
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       static char *
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       ngx_http_access_ctrl_rule(ngx_conf_t *cf, ngx_command_t *cmd, void *conf) {
+static char *
+ngx_http_access_ctrl_rule(ngx_conf_t *cf, ngx_command_t *cmd, void *conf) {
     ngx_http_proxy_connect_loc_conf_t *alcf = conf;
 
     ngx_str_t *value;
